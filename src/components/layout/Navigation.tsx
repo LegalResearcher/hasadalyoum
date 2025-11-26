@@ -5,18 +5,13 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "الرئيسية", href: "/" },
-  { label: "أخبار عدن", href: "/category/aden-news" },
   { label: "أخبار محلية", href: "/category/local-news" },
   { label: "أخبار وتقارير", href: "/category/news-reports" },
   { label: "اليمن في الصحافة", href: "/category/yemen-press" },
   { label: "شؤون دولية", href: "/category/international" },
-  { label: "اقتصاد", href: "/category/economy" },
   { label: "آراء واتجاهات", href: "/category/opinions" },
-  { label: "ثقافة وفن", href: "/category/culture" },
   { label: "علوم وتكنولوجيا", href: "/category/technology" },
-  { label: "صحة", href: "/category/health" },
   { label: "رياضة", href: "/category/sports" },
-  { label: "منوعات", href: "/category/misc" },
 ];
 
 const Navigation = () => {
@@ -31,7 +26,7 @@ const Navigation = () => {
               <Search size={20} />
             </button>
             <Link
-              to="/videos"
+              to="/category/video"
               className="flex items-center gap-2 px-3 py-2 text-nav-foreground hover:text-accent transition-colors"
             >
               <span className="text-sm font-medium">فيديو</span>

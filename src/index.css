@@ -7,87 +7,100 @@
 @layer base {
   :root {
     --background: 0 0% 98%;
-    --foreground: 220 20% 20%;
+    --foreground: 220 20% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 20%;
+    --card-foreground: 220 20% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 20%;
+    --popover-foreground: 220 20% 15%;
 
-    --primary: 210 50% 25%;
+    --primary: 220 70% 25%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 210 50% 25%;
+    --secondary: 220 30% 96%;
+    --secondary-foreground: 220 70% 25%;
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 15% 50%;
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 200 80% 45%;
+    --accent: 210 100% 45%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 80% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 30% 90%;
-    --input: 214 30% 90%;
-    --ring: 210 50% 25%;
+    --border: 220 20% 90%;
+    --input: 220 20% 90%;
+    --ring: 220 70% 25%;
 
     --radius: 0.5rem;
 
-    /* Custom News Site Colors */
-    --header-bg: 212 35% 25%;
+    /* Professional News Site Colors - Royal Blue Theme */
+    --header-bg: 220 60% 20%;
     --header-foreground: 0 0% 100%;
-    --nav-bg: 212 40% 22%;
+    --nav-bg: 220 65% 15%;
     --nav-foreground: 0 0% 100%;
-    --ticker-bg: 210 30% 95%;
-    --ticker-foreground: 220 20% 30%;
-    --breaking-badge: 0 75% 55%;
-    --category-badge: 200 80% 45%;
-    --date-color: 200 70% 50%;
-    --footer-bg: 212 35% 20%;
-    --footer-foreground: 0 0% 90%;
-    --overlay-gradient: linear-gradient(to top, hsla(0, 0%, 0%, 0.8) 0%, transparent 100%);
+    --ticker-bg: 220 20% 96%;
+    --ticker-foreground: 220 20% 20%;
+    --breaking-badge: 0 85% 45%;
+    --category-badge: 210 100% 45%;
+    --date-color: 210 90% 45%;
+    --footer-bg: 220 60% 12%;
+    --footer-foreground: 0 0% 92%;
+    --overlay-gradient: linear-gradient(to top, hsla(220, 60%, 10%, 0.9) 0%, transparent 100%);
 
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-foreground: 220 20% 20%;
+    --sidebar-primary: 220 70% 25%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 220 30% 95%;
+    --sidebar-accent-foreground: 220 70% 25%;
+    --sidebar-border: 220 20% 90%;
+    --sidebar-ring: 210 100% 45%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 220 30% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 220 30% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 220 30% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 210 100% 50%;
+    --primary-foreground: 220 30% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 220 30% 15%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 30% 15%;
+    --muted-foreground: 220 15% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 210 100% 50%;
+    --accent-foreground: 220 30% 10%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 65% 45%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 220 30% 18%;
+    --input: 220 30% 18%;
+    --ring: 210 100% 50%;
+
+    /* Dark mode news colors */
+    --header-bg: 220 50% 12%;
+    --header-foreground: 0 0% 100%;
+    --nav-bg: 220 55% 10%;
+    --nav-foreground: 0 0% 100%;
+    --ticker-bg: 220 30% 12%;
+    --ticker-foreground: 0 0% 90%;
+    --breaking-badge: 0 80% 50%;
+    --category-badge: 210 100% 50%;
+    --date-color: 210 90% 55%;
+    --footer-bg: 220 50% 8%;
+    --footer-foreground: 0 0% 90%;
   }
 }
 
@@ -120,6 +133,13 @@
   .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-4 {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -156,4 +176,41 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary) / 0.8);
+}
+
+/* Prose styling for article content */
+.prose {
+  @apply text-foreground leading-relaxed;
+}
+
+.prose h2 {
+  @apply text-xl font-bold mt-6 mb-3;
+}
+
+.prose h3 {
+  @apply text-lg font-bold mt-5 mb-2;
+}
+
+.prose p {
+  @apply mb-4;
+}
+
+.prose ul, .prose ol {
+  @apply mb-4 pr-6;
+}
+
+.prose li {
+  @apply mb-2;
+}
+
+.prose a {
+  @apply text-accent hover:underline;
+}
+
+.prose img {
+  @apply rounded-lg my-4;
+}
+
+.prose blockquote {
+  @apply border-r-4 border-accent pr-4 my-4 italic text-muted-foreground;
 }
