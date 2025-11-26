@@ -1,146 +1,79 @@
 import { useParams, Link } from "react-router-dom";
+import { useEffect } from "react";
 import Layout from "@/components/layout/Layout";
-import { newsData } from "@/data/newsData";
-import { Calendar, User, Tag, Share2, Facebook, Twitter } from "lucide-react";
-import { FaTelegram, FaWhatsapp } from "react-icons/fa";
+import { usePostBySlug, usePosts, useIncrementPostView } from "@/hooks/usePosts";
 import NewsCard from "@/components/news/NewsCard";
-import SectionHeader from "@/components/news/SectionHeader";
+import VideoEmbed from "@/components/news/VideoEmbed";
+import { FaFacebookF, FaTwitter, FaWhatsapp, FaTelegram } from "react-icons/fa";
+import { Calendar, User, Eye, Clock } from "lucide-react";
 
 const Article = () => {
-  const { slug } = useParams();
-  const article = newsData.find((n) => n.slug === slug);
+  const { slug } = useParams<{ slug: string }>();
+  const { data: article, isLoading } = usePostBySlug(slug || "");
+  const incrementView = useIncrementPostView();
+  const { data: relatedPosts } = usePosts({ categorySlug: article?.category?.slug, limit: 4 });
 
-  if (!article) {
-    return (
-      <Layout>
-        <div className="text-center py-20">
-          <h1 className="text-2xl font-bold text-foreground mb-4">المقال غير موجود</h1>
-          <Link to="/" className="text-accent hover:underline">
-            العودة للرئيسية
-          </Link>
-        </div>
-      </Layout>
-    );
+  useEffect(() => {
+    if (article?.id) incrementView.mutate(article.id);
+  }, [article?.id]);
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  };
+
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+
+  if (isLoading) {
+    return <Layout><div className="animate-pulse"><div className="h-8 bg-muted rounded w-1/3 mb-4" /><div className="aspect-video bg-muted rounded mb-6" /></div></Layout>;
   }
 
-  const relatedNews = newsData
-    .filter((n) => n.categorySlug === article.categorySlug && n.id !== article.id)
-    .slice(0, 4);
+  if (!article) {
+    return <Layout><div className="text-center py-20"><h1 className="text-2xl font-bold mb-4">الخبر غير موجود</h1><Link to="/" className="text-accent hover:underline">العودة للرئيسية</Link></div></Layout>;
+  }
+
+  const filteredRelated = relatedPosts?.filter((p) => p.id !== article.id).slice(0, 4) || [];
 
   return (
     <Layout>
-      <article className="max-w-4xl mx-auto">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-          <Link to="/" className="hover:text-accent">الرئيسية</Link>
-          <span>/</span>
-          <Link to={`/category/${article.categorySlug}`} className="hover:text-accent">
-            {article.category}
-          </Link>
-          <span>/</span>
-          <span className="text-foreground line-clamp-1">{article.title}</span>
-        </nav>
+      <nav className="text-sm text-muted-foreground mb-4">
+        <Link to="/" className="hover:text-accent">الرئيسية</Link>
+        <span className="mx-2">/</span>
+        {article.category && <><Link to={`/category/${article.category.slug}`} className="hover:text-accent">{article.category.name}</Link><span className="mx-2">/</span></>}
+        <span className="text-foreground">{article.title}</span>
+      </nav>
 
-        {/* Category Badge */}
-        <span className="inline-block bg-category text-primary-foreground px-4 py-1 rounded text-sm font-medium mb-4">
-          {article.category}
-        </span>
-
-        {/* Title */}
-        <h1 className="text-3xl font-bold text-foreground leading-relaxed mb-6">
-          {article.title}
-        </h1>
-
-        {/* Meta */}
-        <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground mb-6 pb-6 border-b border-border">
-          <div className="flex items-center gap-2">
-            <User size={16} />
-            <span>{article.author}</span>
+      <article className="bg-card rounded-lg overflow-hidden shadow-sm">
+        <div className="p-6">
+          <p className="text-sm text-muted-foreground mb-2">{article.source_type}</p>
+          {article.category && <Link to={`/category/${article.category.slug}`} className="inline-block bg-accent text-accent-foreground px-3 py-1 rounded text-sm font-medium mb-3">{article.category.name}</Link>}
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-4 leading-relaxed">{article.title}</h1>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+            {article.author && <div className="flex items-center gap-2"><User size={16} /><span>{article.author.name}</span></div>}
+            <div className="flex items-center gap-1"><Calendar size={16} /><span>{formatDate(article.published_at)}</span></div>
+            <div className="flex items-center gap-1"><Eye size={16} /><span>{article.views_count} مشاهدة</span></div>
           </div>
-          <div className="flex items-center gap-2">
-            <Calendar size={16} />
-            <span>{article.date}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">مشاركة:</span>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#1877f2] text-white flex items-center justify-center hover:opacity-80"><FaFacebookF size={14} /></a>
+            <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#1da1f2] text-white flex items-center justify-center hover:opacity-80"><FaTwitter size={14} /></a>
+            <a href={`https://wa.me/?text=${encodeURIComponent(article.title + " " + shareUrl)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#25d366] text-white flex items-center justify-center hover:opacity-80"><FaWhatsapp size={14} /></a>
+            <a href={`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full bg-[#0088cc] text-white flex items-center justify-center hover:opacity-80"><FaTelegram size={14} /></a>
           </div>
         </div>
-
-        {/* Share Buttons */}
-        <div className="flex items-center gap-3 mb-6">
-          <span className="text-sm text-muted-foreground flex items-center gap-2">
-            <Share2 size={16} />
-            مشاركة:
-          </span>
-          <div className="flex gap-2">
-            <button className="w-8 h-8 rounded-full bg-[#1877f2] text-primary-foreground flex items-center justify-center hover:opacity-80 transition-opacity">
-              <Facebook size={16} />
-            </button>
-            <button className="w-8 h-8 rounded-full bg-[#1da1f2] text-primary-foreground flex items-center justify-center hover:opacity-80 transition-opacity">
-              <Twitter size={16} />
-            </button>
-            <button className="w-8 h-8 rounded-full bg-[#25d366] text-primary-foreground flex items-center justify-center hover:opacity-80 transition-opacity">
-              <FaWhatsapp size={16} />
-            </button>
-            <button className="w-8 h-8 rounded-full bg-[#0088cc] text-primary-foreground flex items-center justify-center hover:opacity-80 transition-opacity">
-              <FaTelegram size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Featured Image */}
-        <div className="relative aspect-video rounded-lg overflow-hidden mb-8">
-          <img
-            src={article.image}
-            alt={article.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Content */}
-        <div className="prose prose-lg max-w-none mb-8">
-          <p className="text-foreground leading-loose text-lg mb-6">
-            {article.excerpt}
-          </p>
-          <p className="text-foreground leading-loose">
-            {article.content}
-          </p>
-          <p className="text-foreground leading-loose mt-4">
-            وأضاف المصدر أن الجهود المبذولة تهدف إلى تحقيق الاستقرار في المنطقة وتعزيز التعاون بين جميع الأطراف. وأشار إلى أن هناك تقدماً ملموساً في المحادثات الجارية، مع التأكيد على أهمية الحوار كوسيلة أساسية لحل الخلافات.
-          </p>
-          <p className="text-foreground leading-loose mt-4">
-            من جانبه، أكد المتحدث الرسمي أن جميع الإجراءات المتخذة تأتي في إطار السعي لتحقيق المصلحة العامة وخدمة المواطنين. وشدد على ضرورة التكاتف والتعاون بين جميع مؤسسات الدولة لتجاوز التحديات الراهنة.
-          </p>
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-wrap items-center gap-2 mb-8 pb-8 border-b border-border">
-          <Tag size={16} className="text-muted-foreground" />
-          {article.tags.map((tag) => (
-            <Link
-              key={tag}
-              to={`/tag/${tag}`}
-              className="bg-muted text-muted-foreground px-3 py-1 rounded text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              {tag}
-            </Link>
-          ))}
+        {article.featured_image && <div className="aspect-video"><img src={article.featured_image} alt={article.title} className="w-full h-full object-cover" /></div>}
+        {article.external_video_url && <div className="p-6"><VideoEmbed url={article.external_video_url} title={article.title} /></div>}
+        <div className="p-6">
+          {article.excerpt && <p className="text-lg font-medium text-foreground mb-6 leading-relaxed">{article.excerpt}</p>}
+          {article.content && <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: article.content }} />}
         </div>
       </article>
 
-      {/* Related News */}
-      {relatedNews.length > 0 && (
+      {filteredRelated.length > 0 && (
         <section className="mt-10">
-          <SectionHeader title="أخبار ذات صلة" showMore={false} />
+          <div className="flex items-center gap-3 mb-6"><div className="w-1 h-8 bg-accent rounded-full" /><h2 className="text-xl font-bold text-foreground">أخبار ذات صلة</h2></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {relatedNews.map((item) => (
-              <NewsCard
-                key={item.id}
-                id={item.id}
-                title={item.title}
-                category={item.category}
-                image={item.image}
-                slug={item.slug}
-                variant="small"
-              />
-            ))}
+            {filteredRelated.map((post) => <NewsCard key={post.id} post={post} variant="small" />)}
           </div>
         </section>
       )}

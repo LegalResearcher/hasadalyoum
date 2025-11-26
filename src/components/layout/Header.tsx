@@ -13,8 +13,10 @@ const Header = () => {
         
         <Link to="/" className="flex items-center gap-3 mr-8">
           <div className="text-left">
-            <h1 className="text-3xl font-bold text-header-foreground">حصاد اليوم</h1>
-            <p className="text-xs text-header-foreground/80">منبر إعلامي جنوبي حر ومستقل</p>
+            <h1 className="text-3xl font-bold text-header-foreground">
+              <span className="text-accent">حصاد</span> اليوم
+            </h1>
+            <p className="text-xs text-header-foreground/80">منبر إعلامي يمني حر ومستقل</p>
           </div>
           <div className="w-16 h-16 flex items-center justify-center">
             <svg viewBox="0 0 100 100" className="w-14 h-14 text-accent">
