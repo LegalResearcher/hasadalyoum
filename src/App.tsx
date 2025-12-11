@@ -6,6 +6,16 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Article from "./pages/Article";
 import Category from "./pages/Category";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/admin/Dashboard";
+import Posts from "./pages/admin/Posts";
+import PostEditor from "./pages/admin/PostEditor";
+import Categories from "./pages/admin/Categories";
+import Authors from "./pages/admin/Authors";
+import BreakingNewsAdmin from "./pages/admin/BreakingNews";
+import Media from "./pages/admin/Media";
+import Tags from "./pages/admin/Tags";
+import Settings from "./pages/admin/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -17,9 +27,27 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Index />} />
           <Route path="/article/:slug" element={<Article />} />
           <Route path="/category/:slug" element={<Category />} />
+          
+          {/* Auth */}
+          <Route path="/auth" element={<Auth />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<Dashboard />} />
+          <Route path="/admin/posts" element={<Posts />} />
+          <Route path="/admin/posts/new" element={<PostEditor />} />
+          <Route path="/admin/posts/:id" element={<PostEditor />} />
+          <Route path="/admin/categories" element={<Categories />} />
+          <Route path="/admin/authors" element={<Authors />} />
+          <Route path="/admin/breaking" element={<BreakingNewsAdmin />} />
+          <Route path="/admin/media" element={<Media />} />
+          <Route path="/admin/tags" element={<Tags />} />
+          <Route path="/admin/settings" element={<Settings />} />
+          
+          {/* 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
