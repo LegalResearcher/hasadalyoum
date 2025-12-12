@@ -33,6 +33,7 @@ const PostEditor = () => {
     excerpt: "",
     content: "",
     featured_image: "",
+    additional_images: [] as string[],
     category_id: "",
     author_id: "",
     status: "draft" as "draft" | "published" | "scheduled" | "hidden",
@@ -70,6 +71,7 @@ const PostEditor = () => {
         excerpt: post.excerpt || "",
         content: post.content || "",
         featured_image: post.featured_image || "",
+        additional_images: [],
         category_id: post.category_id || "",
         author_id: post.author_id || "",
         status: post.status || "draft",
@@ -113,13 +115,32 @@ const PostEditor = () => {
     }));
   };
 
+  const generateKeywords = (title: string, content: string) => {
+    const text = `${title} ${content}`.replace(/<[^>]*>/g, "");
+    const words = text.split(/\s+/).filter(word => word.length > 3);
+    const wordCount: Record<string, number> = {};
+    words.forEach(word => {
+      const clean = word.replace(/[^\u0600-\u06FFa-zA-Z]/g, "");
+      if (clean.length > 3) {
+        wordCount[clean] = (wordCount[clean] || 0) + 1;
+      }
+    });
+    return Object.entries(wordCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([word]) => word)
+      .join(", ");
+  };
+
   const handleContentChange = (content: string) => {
     const excerpt = content.replace(/<[^>]*>/g, "").slice(0, 200);
+    const keywords = generateKeywords(formData.title, content);
     setFormData((prev) => ({
       ...prev,
       content,
       excerpt: prev.excerpt || excerpt,
       meta_description: prev.meta_description || excerpt.slice(0, 160),
+      meta_keywords: prev.meta_keywords || keywords,
     }));
   };
 
@@ -128,16 +149,18 @@ const PostEditor = () => {
       const wordCount = countWords(formData.content);
       const readingTime = estimateReadingTime(formData.content);
 
+      const { additional_images, ...rest } = formData;
+
       const postData = {
-        ...formData,
+        ...rest,
         word_count: wordCount,
         reading_time: readingTime,
-        user_id: user?.id,
+        user_id: user?.id || null,
         published_at: formData.status === "published" ? new Date().toISOString() : null,
         scheduled_at: formData.scheduled_at || null,
         hide_after: formData.hide_after || null,
-        category_id: formData.category_id || null,
-        author_id: formData.author_id || null,
+        category_id: formData.category_id && formData.category_id.length > 0 ? formData.category_id : null,
+        author_id: formData.author_id && formData.author_id.length > 0 ? formData.author_id : null,
       };
 
       if (isNew) {
@@ -180,6 +203,42 @@ const PostEditor = () => {
 
     setFormData((prev) => ({ ...prev, featured_image: urlData.publicUrl }));
     toast.success("تم رفع الصورة بنجاح");
+  };
+
+  const handleAdditionalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    for (const file of Array.from(files)) {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("post-images")
+        .upload(fileName, file);
+
+      if (uploadError) {
+        toast.error(`حدث خطأ أثناء رفع ${file.name}`);
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("post-images")
+        .getPublicUrl(fileName);
+
+      setFormData((prev) => ({
+        ...prev,
+        additional_images: [...prev.additional_images, urlData.publicUrl],
+      }));
+    }
+    toast.success("تم رفع الصور بنجاح");
+  };
+
+  const removeAdditionalImage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      additional_images: prev.additional_images.filter((_, i) => i !== index),
+    }));
   };
 
   if (!isNew && postLoading) {
@@ -299,6 +358,31 @@ const PostEditor = () => {
                     placeholder="أو أدخل رابط الصورة"
                     dir="ltr"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>وسائط إضافية (معرض الصور)</Label>
+                  {formData.additional_images.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {formData.additional_images.map((img, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={img}
+                            alt={`Additional ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeAdditionalImage(index)}
+                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Input type="file" accept="image/*" multiple onChange={handleAdditionalImageUpload} />
                 </div>
 
                 <div className="space-y-2">
