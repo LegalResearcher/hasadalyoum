@@ -68,7 +68,7 @@ const Footer = () => {
 
       <div className="border-t border-footer-foreground/20 py-4">
         <div className="container text-center text-sm text-footer-foreground/70">
-          جميع الحقوق محفوظة © {new Date().getFullYear()} حصاد اليوم
+          © {new Date().getFullYear()} الناصر تِك للحلول الرقمية (Alnasser Tech Digital Solutions). جميع الحقوق محفوظة.
         </div>
       </div>
     </footer>
