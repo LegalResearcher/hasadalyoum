@@ -144,8 +144,19 @@ const PostEditor = () => {
     }));
   };
 
+  const isValidUUID = (str: string | undefined): boolean => {
+    if (!str) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
+      // Validate UUID for updates
+      if (!isNew && !isValidUUID(id)) {
+        throw new Error("معرف الخبر غير صالح");
+      }
+
       const wordCount = countWords(formData.content);
       const readingTime = estimateReadingTime(formData.content);
 
@@ -159,8 +170,8 @@ const PostEditor = () => {
         published_at: formData.status === "published" ? new Date().toISOString() : null,
         scheduled_at: formData.scheduled_at || null,
         hide_after: formData.hide_after || null,
-        category_id: formData.category_id && formData.category_id.length > 0 ? formData.category_id : null,
-        author_id: formData.author_id && formData.author_id.length > 0 ? formData.author_id : null,
+        category_id: isValidUUID(formData.category_id) ? formData.category_id : null,
+        author_id: isValidUUID(formData.author_id) ? formData.author_id : null,
       };
 
       if (isNew) {
