@@ -15,16 +15,16 @@ const NewsSection = ({ title, categorySlug, layout = "grid", limit }: NewsSectio
 
   if (isLoading) {
     return (
-      <section className="mb-10">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-8 bg-accent rounded-full" />
-            <h2 className="text-xl font-bold text-foreground">{title}</h2>
+      <section className="mb-8 md:mb-10">
+        <div className="flex items-center justify-between mb-4 md:mb-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-1 h-6 md:h-8 bg-accent rounded-full" />
+            <h2 className="text-lg md:text-xl font-bold text-foreground">{title}</h2>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-muted rounded-lg h-64 animate-pulse" />
+            <div key={i} className="bg-muted rounded-lg h-48 md:h-64 animate-pulse" />
           ))}
         </div>
       </section>
@@ -36,29 +36,29 @@ const NewsSection = ({ title, categorySlug, layout = "grid", limit }: NewsSectio
   }
 
   return (
-    <section className="mb-10">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-1 h-8 bg-accent rounded-full" />
-          <h2 className="text-xl font-bold text-foreground">{title}</h2>
+    <section className="mb-8 md:mb-10">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="w-1 h-6 md:h-8 bg-accent rounded-full" />
+          <h2 className="text-lg md:text-xl font-bold text-foreground">{title}</h2>
         </div>
         <Link
           to={`/category/${categorySlug}`}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-accent transition-colors"
+          className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground hover:text-accent transition-colors"
         >
           <span>المزيد</span>
-          <ChevronLeft size={16} />
+          <ChevronLeft size={14} className="md:w-4 md:h-4" />
         </Link>
       </div>
 
       {layout === "featured" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {posts[0] && (
             <div className="lg:col-span-2">
               <NewsCard post={posts[0]} />
             </div>
           )}
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {posts.slice(1, 5).map((post) => (
               <NewsCard key={post.id} post={post} variant="horizontal" />
             ))}
@@ -67,7 +67,7 @@ const NewsSection = ({ title, categorySlug, layout = "grid", limit }: NewsSectio
       )}
 
       {layout === "grid" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {posts.map((post) => (
             <NewsCard key={post.id} post={post} variant="small" />
           ))}
@@ -75,7 +75,7 @@ const NewsSection = ({ title, categorySlug, layout = "grid", limit }: NewsSectio
       )}
 
       {layout === "list" && (
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {posts.map((post) => (
             <NewsCard key={post.id} post={post} variant="horizontal" />
           ))}
@@ -83,7 +83,7 @@ const NewsSection = ({ title, categorySlug, layout = "grid", limit }: NewsSectio
       )}
 
       {layout === "opinions" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {posts.map((post) => (
             <NewsCard key={post.id} post={post} variant="opinion" />
           ))}
