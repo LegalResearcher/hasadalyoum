@@ -22,7 +22,7 @@ const PostEditor = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const isNew = id === "new";
+  const isNew = !id || id === "new";
 
   const { data: categories } = useCategories();
   const { data: authors } = useAuthors();
