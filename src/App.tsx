@@ -16,6 +16,8 @@ import BreakingNewsAdmin from "./pages/admin/BreakingNews";
 import Media from "./pages/admin/Media";
 import Tags from "./pages/admin/Tags";
 import Settings from "./pages/admin/Settings";
+import Profile from "./pages/admin/Profile";
+import Editors from "./pages/admin/Editors";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,8 @@ const App = () => (
           <Route path="/admin/media" element={<Media />} />
           <Route path="/admin/tags" element={<Tags />} />
           <Route path="/admin/settings" element={<Settings />} />
+          <Route path="/admin/profile" element={<Profile />} />
+          <Route path="/admin/editors" element={<Editors />} />
           
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

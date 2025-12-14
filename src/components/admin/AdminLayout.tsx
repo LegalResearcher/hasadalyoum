@@ -14,7 +14,9 @@ import {
   LogOut,
   Loader2,
   Menu,
-  X
+  X,
+  UserCog,
+  User
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -23,7 +25,8 @@ interface AdminLayoutProps {
   children: ReactNode;
 }
 
-const menuItems = [
+// عناصر القائمة للجميع
+const baseMenuItems = [
   { path: "/admin", label: "لوحة التحكم", icon: LayoutDashboard },
   { path: "/admin/posts", label: "الأخبار", icon: FileText },
   { path: "/admin/categories", label: "الأقسام", icon: FolderOpen },
@@ -31,13 +34,23 @@ const menuItems = [
   { path: "/admin/breaking", label: "الأخبار العاجلة", icon: Zap },
   { path: "/admin/media", label: "الوسائط", icon: Image },
   { path: "/admin/tags", label: "الوسوم", icon: Tags },
+];
+
+// عناصر للمسؤول فقط
+const adminOnlyItems = [
+  { path: "/admin/editors", label: "إدارة المحررين", icon: UserCog },
   { path: "/admin/settings", label: "الإعدادات", icon: Settings },
+];
+
+// عناصر للجميع في الأسفل
+const bottomItems = [
+  { path: "/admin/profile", label: "الملف الشخصي", icon: User },
 ];
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading, isAdmin, signOut } = useAuth();
+  const { user, loading, isAdmin, userRole, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -100,7 +113,50 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         <div className="lg:hidden h-14" />
 
         <nav className="p-2 space-y-1">
-          {menuItems.map((item) => {
+          {/* القائمة الأساسية */}
+          {baseMenuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors",
+                  isActive 
+                    ? "bg-primary text-primary-foreground" 
+                    : "hover:bg-muted text-foreground"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+          
+          {/* عناصر المسؤول فقط */}
+          {userRole === 'admin' && adminOnlyItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors",
+                  isActive 
+                    ? "bg-primary text-primary-foreground" 
+                    : "hover:bg-muted text-foreground"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+          
+          {/* الملف الشخصي */}
+          {bottomItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
