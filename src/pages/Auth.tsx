@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +50,22 @@ const Auth = () => {
     }
   };
 
+  const sendNewUserNotification = async (email: string, fullName: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('notify-new-user', {
+        body: { email, fullName }
+      });
+      
+      if (error) {
+        console.error("Failed to send notification:", error);
+      } else {
+        console.log("Notification sent successfully");
+      }
+    } catch (err) {
+      console.error("Error sending notification:", err);
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!signupEmail || !signupPassword) {
@@ -72,7 +89,9 @@ const Auth = () => {
         toast.error(error.message);
       }
     } else {
-      toast.success("تم إنشاء الحساب بنجاح");
+      // Send notification to admin
+      await sendNewUserNotification(signupEmail, signupName);
+      toast.success("تم إنشاء الحساب بنجاح. سيتم مراجعة طلبك من قبل الإدارة.");
       navigate("/admin");
     }
   };
