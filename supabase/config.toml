@@ -2,3 +2,6 @@ project_id = "zfukvvhtkzwztpxoitak"
 
 [functions.notify-new-user]
 verify_jwt = false
+
+[functions.notify-role-granted]
+verify_jwt = false

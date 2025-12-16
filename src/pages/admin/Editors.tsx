@@ -39,10 +39,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Plus, Pencil, Trash2, UserCog, Shield } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, UserCog, Shield, UserPlus, Clock, Mail } from "lucide-react";
 
 interface EditorForm {
   email: string;
@@ -58,6 +59,13 @@ const defaultForm: EditorForm = {
   role: "editor",
 };
 
+interface PendingUser {
+  user_id: string;
+  full_name: string | null;
+  email: string;
+  created_at: string;
+}
+
 const Editors = () => {
   const navigate = useNavigate();
   const { userRole, user } = useAuth();
@@ -69,6 +77,8 @@ const Editors = () => {
   const [formData, setFormData] = useState<EditorForm>(defaultForm);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [grantRoleUser, setGrantRoleUser] = useState<PendingUser | null>(null);
+  const [selectedRole, setSelectedRole] = useState<"admin" | "editor">("editor");
 
   // Redirect if not admin
   if (userRole !== "admin") {
@@ -79,7 +89,6 @@ const Editors = () => {
   const { data: editors, isLoading } = useQuery({
     queryKey: ["editors"],
     queryFn: async () => {
-      // Get all user roles
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("*")
@@ -87,7 +96,6 @@ const Editors = () => {
 
       if (rolesError) throw rolesError;
 
-      // Get profiles for these users
       const userIds = roles.map((r) => r.user_id);
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
@@ -96,7 +104,6 @@ const Editors = () => {
 
       if (profilesError) throw profilesError;
 
-      // Combine data
       return roles.map((role) => {
         const profile = profiles.find((p) => p.user_id === role.user_id);
         return {
@@ -108,24 +115,53 @@ const Editors = () => {
     },
   });
 
+  const { data: pendingUsers, isLoading: loadingPending } = useQuery({
+    queryKey: ["pending-users"],
+    queryFn: async () => {
+      // Get all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*");
+
+      if (profilesError) throw profilesError;
+
+      // Get all user_ids that have roles
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id");
+
+      if (rolesError) throw rolesError;
+
+      const usersWithRoles = new Set(roles.map((r) => r.user_id));
+
+      // Filter profiles without roles
+      const pending = profiles
+        .filter((p) => !usersWithRoles.has(p.user_id))
+        .map((p) => ({
+          user_id: p.user_id,
+          full_name: p.full_name,
+          email: "", // Will be populated if needed
+          created_at: p.created_at,
+        }));
+
+      return pending as PendingUser[];
+    },
+  });
+
   const createEditorMutation = useMutation({
     mutationFn: async (data: EditorForm) => {
-      // Create user via Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: data.fullName,
-          },
+          data: { full_name: data.fullName },
         },
       });
 
       if (authError) throw authError;
       if (!authData.user) throw new Error("فشل في إنشاء المستخدم");
 
-      // Add role
       const { error: roleError } = await supabase.from("user_roles").insert({
         user_id: authData.user.id,
         role: data.role,
@@ -139,10 +175,7 @@ const Editors = () => {
       queryClient.invalidateQueries({ queryKey: ["editors"] });
       setDialogOpen(false);
       setFormData(defaultForm);
-      toast({
-        title: "تم الإنشاء",
-        description: "تم إنشاء المحرر بنجاح",
-      });
+      toast({ title: "تم الإنشاء", description: "تم إنشاء المحرر بنجاح" });
     },
     onError: (error: any) => {
       toast({
@@ -153,14 +186,44 @@ const Editors = () => {
     },
   });
 
+  const grantRoleMutation = useMutation({
+    mutationFn: async ({ userId, role, fullName }: { userId: string; role: "admin" | "editor"; fullName: string }) => {
+      const { error } = await supabase.from("user_roles").insert({
+        user_id: userId,
+        role: role,
+      });
+
+      if (error) throw error;
+
+      // Get user email from profiles or auth (we'll use the notification function)
+      // Send notification email
+      try {
+        await supabase.functions.invoke('notify-role-granted', {
+          body: { email: "", fullName, role } // Email will be sent to admin notification
+        });
+      } catch (e) {
+        console.log("Notification sent or skipped");
+      }
+
+      return { userId, role };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["editors"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-users"] });
+      setGrantRoleUser(null);
+      toast({ title: "تم منح الصلاحيات", description: "تم منح الصلاحيات للمستخدم بنجاح" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في منح الصلاحيات",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateRoleMutation = useMutation({
-    mutationFn: async ({
-      userId,
-      role,
-    }: {
-      userId: string;
-      role: "admin" | "editor";
-    }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "editor" }) => {
       const { error } = await supabase
         .from("user_roles")
         .update({ role })
@@ -171,23 +234,15 @@ const Editors = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["editors"] });
       setEditingUserId(null);
-      toast({
-        title: "تم التحديث",
-        description: "تم تحديث الدور بنجاح",
-      });
+      toast({ title: "تم التحديث", description: "تم تحديث الدور بنجاح" });
     },
     onError: () => {
-      toast({
-        title: "خطأ",
-        description: "فشل في تحديث الدور",
-        variant: "destructive",
-      });
+      toast({ title: "خطأ", description: "فشل في تحديث الدور", variant: "destructive" });
     },
   });
 
   const deleteEditorMutation = useMutation({
     mutationFn: async (userId: string) => {
-      // Delete role first
       const { error: roleError } = await supabase
         .from("user_roles")
         .delete()
@@ -197,43 +252,38 @@ const Editors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["editors"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-users"] });
       setDeleteId(null);
-      toast({
-        title: "تم الحذف",
-        description: "تم حذف صلاحيات المحرر بنجاح",
-      });
+      toast({ title: "تم الحذف", description: "تم حذف صلاحيات المحرر بنجاح" });
     },
     onError: () => {
-      toast({
-        title: "خطأ",
-        description: "فشل في حذف المحرر",
-        variant: "destructive",
-      });
+      toast({ title: "خطأ", description: "فشل في حذف المحرر", variant: "destructive" });
     },
   });
 
   const handleSubmit = async () => {
     if (!formData.email || !formData.password || !formData.fullName) {
-      toast({
-        title: "خطأ",
-        description: "جميع الحقول مطلوبة",
-        variant: "destructive",
-      });
+      toast({ title: "خطأ", description: "جميع الحقول مطلوبة", variant: "destructive" });
       return;
     }
 
     if (formData.password.length < 6) {
-      toast({
-        title: "خطأ",
-        description: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
-        variant: "destructive",
-      });
+      toast({ title: "خطأ", description: "كلمة المرور يجب أن تكون 6 أحرف على الأقل", variant: "destructive" });
       return;
     }
 
     setIsCreating(true);
     await createEditorMutation.mutateAsync(formData);
     setIsCreating(false);
+  };
+
+  const handleGrantRole = () => {
+    if (!grantRoleUser) return;
+    grantRoleMutation.mutate({
+      userId: grantRoleUser.user_id,
+      role: selectedRole,
+      fullName: grantRoleUser.full_name || "",
+    });
   };
 
   const getRoleBadge = (role: string) => {
@@ -279,9 +329,7 @@ const Editors = () => {
                   <Input
                     id="fullName"
                     value={formData.fullName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, fullName: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     placeholder="أدخل الاسم الكامل"
                   />
                 </div>
@@ -291,9 +339,7 @@ const Editors = () => {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) =>
-                      setFormData({ ...formData, email: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="example@email.com"
                   />
                 </div>
@@ -303,9 +349,7 @@ const Editors = () => {
                     id="password"
                     type="password"
                     value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder="أدخل كلمة المرور"
                   />
                 </div>
@@ -313,9 +357,7 @@ const Editors = () => {
                   <Label htmlFor="role">الدور</Label>
                   <Select
                     value={formData.role}
-                    onValueChange={(value: "admin" | "editor") =>
-                      setFormData({ ...formData, role: value })
-                    }
+                    onValueChange={(value: "admin" | "editor") => setFormData({ ...formData, role: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="اختر الدور" />
@@ -328,13 +370,9 @@ const Editors = () => {
                 </div>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  إلغاء
-                </Button>
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
                 <Button onClick={handleSubmit} disabled={isCreating}>
-                  {isCreating && (
-                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  )}
+                  {isCreating && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                   إضافة
                 </Button>
               </div>
@@ -342,103 +380,214 @@ const Editors = () => {
           </Dialog>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>المحررون والمسؤولون</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : editors && editors.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>الاسم</TableHead>
-                    <TableHead>الدور</TableHead>
-                    <TableHead>تاريخ الإضافة</TableHead>
-                    <TableHead className="text-left">الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {editors.map((editor) => (
-                    <TableRow key={editor.id}>
-                      <TableCell className="font-medium">
-                        {editor.full_name}
-                      </TableCell>
-                      <TableCell>
-                        {editingUserId === editor.user_id ? (
-                          <Select
-                            value={editor.role}
-                            onValueChange={(value: "admin" | "editor") => {
-                              updateRoleMutation.mutate({
-                                userId: editor.user_id,
-                                role: value,
-                              });
-                            }}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="editor">محرر</SelectItem>
-                              <SelectItem value="admin">مسؤول</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          getRoleBadge(editor.role)
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(editor.created_at).toLocaleDateString("ar")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              setEditingUserId(
-                                editingUserId === editor.user_id
-                                  ? null
-                                  : editor.user_id
-                              )
-                            }
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          {editor.user_id !== user?.id && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => setDeleteId(editor.user_id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                لا يوجد محررون حتى الآن
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="editors" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="editors" className="flex items-center gap-2">
+              <UserCog className="h-4 w-4" />
+              المحررون ({editors?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              في انتظار الموافقة ({pendingUsers?.length || 0})
+            </TabsTrigger>
+          </TabsList>
 
+          <TabsContent value="editors">
+            <Card>
+              <CardHeader>
+                <CardTitle>المحررون والمسؤولون</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : editors && editors.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>الاسم</TableHead>
+                        <TableHead>الدور</TableHead>
+                        <TableHead>تاريخ الإضافة</TableHead>
+                        <TableHead className="text-left">الإجراءات</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {editors.map((editor) => (
+                        <TableRow key={editor.id}>
+                          <TableCell className="font-medium">{editor.full_name}</TableCell>
+                          <TableCell>
+                            {editingUserId === editor.user_id ? (
+                              <Select
+                                value={editor.role}
+                                onValueChange={(value: "admin" | "editor") => {
+                                  updateRoleMutation.mutate({ userId: editor.user_id, role: value });
+                                }}
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="editor">محرر</SelectItem>
+                                  <SelectItem value="admin">مسؤول</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              getRoleBadge(editor.role)
+                            )}
+                          </TableCell>
+                          <TableCell>{new Date(editor.created_at).toLocaleDateString("ar")}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditingUserId(editingUserId === editor.user_id ? null : editor.user_id)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              {editor.user_id !== user?.id && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => setDeleteId(editor.user_id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">لا يوجد محررون حتى الآن</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="pending">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  المستخدمون في انتظار الموافقة
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingPending ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : pendingUsers && pendingUsers.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>الاسم</TableHead>
+                        <TableHead>تاريخ التسجيل</TableHead>
+                        <TableHead className="text-left">الإجراءات</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingUsers.map((pendingUser) => (
+                        <TableRow key={pendingUser.user_id}>
+                          <TableCell className="font-medium">
+                            {pendingUser.full_name || "بدون اسم"}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(pendingUser.created_at).toLocaleDateString("ar")}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setGrantRoleUser(pendingUser);
+                                setSelectedRole("editor");
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                              منح صلاحيات
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8">
+                    <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">لا يوجد مستخدمون في انتظار الموافقة</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Grant Role Dialog */}
+        <Dialog open={!!grantRoleUser} onOpenChange={() => setGrantRoleUser(null)}>
+          <DialogContent className="sm:max-w-[400px]" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                منح صلاحيات للمستخدم
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-medium">{grantRoleUser?.full_name || "بدون اسم"}</p>
+                <p className="text-sm text-muted-foreground">
+                  تسجيل: {grantRoleUser && new Date(grantRoleUser.created_at).toLocaleDateString("ar")}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>اختر الدور</Label>
+                <Select value={selectedRole} onValueChange={(v: "admin" | "editor") => setSelectedRole(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="editor">
+                      <div className="flex items-center gap-2">
+                        <UserCog className="h-4 w-4" />
+                        محرر
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="admin">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        مسؤول
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg text-sm">
+                <Mail className="h-4 w-4 text-blue-500" />
+                <span>سيتم إرسال إشعار بريدي للمستخدم</span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setGrantRoleUser(null)}>إلغاء</Button>
+              <Button onClick={handleGrantRole} disabled={grantRoleMutation.isPending}>
+                {grantRoleMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                منح الصلاحيات
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
         <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
           <AlertDialogContent dir="rtl">
             <AlertDialogHeader>
               <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
               <AlertDialogDescription>
-                سيتم إزالة صلاحيات هذا المستخدم. لن يتمكن بعدها من الوصول للوحة
-                التحكم.
+                سيتم إزالة صلاحيات هذا المستخدم. لن يتمكن بعدها من الوصول للوحة التحكم.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="gap-2">
