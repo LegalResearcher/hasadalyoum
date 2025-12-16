@@ -1,25 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import AdminLayout from "@/components/admin/AdminLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -39,11 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Plus, Pencil, Trash2, UserCog, Shield, UserPlus, Clock, Mail } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, ArrowRight, LogOut, Users, User } from "lucide-react";
 
 interface EditorForm {
   email: string;
@@ -59,49 +48,34 @@ const defaultForm: EditorForm = {
   role: "editor",
 };
 
-interface PendingUser {
+interface EditorData {
+  id: string;
   user_id: string;
-  full_name: string | null;
-  email: string;
+  role: string;
   created_at: string;
+  full_name: string;
+  avatar_url: string | null;
 }
 
 const Editors = () => {
   const navigate = useNavigate();
-  const { userRole, user, loading } = useAuth();
+  const { userRole, user, loading, signOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState<EditorForm>(defaultForm);
-  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<EditorData | null>(null);
+  const [editFormData, setEditFormData] = useState({ fullName: "", role: "editor" as "admin" | "editor" });
   const [isCreating, setIsCreating] = useState(false);
-  const [grantRoleUser, setGrantRoleUser] = useState<PendingUser | null>(null);
-  const [selectedRole, setSelectedRole] = useState<"admin" | "editor">("editor");
 
-  // Redirect if not admin using useEffect
   useEffect(() => {
     if (!loading && userRole !== "admin") {
       navigate("/admin");
     }
   }, [userRole, loading, navigate]);
-
-  // Show loading while checking auth
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  // Don't render if not admin
-  if (userRole !== "admin") {
-    return null;
-  }
 
   const { data: editors, isLoading } = useQuery({
     queryKey: ["editors"],
@@ -125,44 +99,12 @@ const Editors = () => {
         const profile = profiles.find((p) => p.user_id === role.user_id);
         return {
           ...role,
-          full_name: profile?.full_name || "بدون اسم",
+          full_name: profile?.full_name || `مستخدم ${role.user_id.slice(0, 7)}`,
           avatar_url: profile?.avatar_url,
         };
       });
     },
-  });
-
-  const { data: pendingUsers, isLoading: loadingPending } = useQuery({
-    queryKey: ["pending-users"],
-    queryFn: async () => {
-      // Get all profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*");
-
-      if (profilesError) throw profilesError;
-
-      // Get all user_ids that have roles
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id");
-
-      if (rolesError) throw rolesError;
-
-      const usersWithRoles = new Set(roles.map((r) => r.user_id));
-
-      // Filter profiles without roles
-      const pending = profiles
-        .filter((p) => !usersWithRoles.has(p.user_id))
-        .map((p) => ({
-          user_id: p.user_id,
-          full_name: p.full_name,
-          email: "", // Will be populated if needed
-          created_at: p.created_at,
-        }));
-
-      return pending as PendingUser[];
-    },
+    enabled: userRole === "admin",
   });
 
   const createEditorMutation = useMutation({
@@ -192,69 +134,41 @@ const Editors = () => {
       queryClient.invalidateQueries({ queryKey: ["editors"] });
       setDialogOpen(false);
       setFormData(defaultForm);
-      toast({ title: "تم الإنشاء", description: "تم إنشاء المحرر بنجاح" });
+      toast({ title: "تم الإنشاء", description: "تم إنشاء المستخدم بنجاح" });
     },
     onError: (error: any) => {
       toast({
         title: "خطأ",
-        description: error.message || "فشل في إنشاء المحرر",
+        description: error.message || "فشل في إنشاء المستخدم",
         variant: "destructive",
       });
     },
   });
 
-  const grantRoleMutation = useMutation({
-    mutationFn: async ({ userId, role, fullName }: { userId: string; role: "admin" | "editor"; fullName: string }) => {
-      const { error } = await supabase.from("user_roles").insert({
-        user_id: userId,
-        role: role,
-      });
+  const updateMutation = useMutation({
+    mutationFn: async ({ userId, fullName, role }: { userId: string; fullName: string; role: "admin" | "editor" }) => {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ full_name: fullName })
+        .eq("user_id", userId);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      // Get user email from profiles or auth (we'll use the notification function)
-      // Send notification email
-      try {
-        await supabase.functions.invoke('notify-role-granted', {
-          body: { email: "", fullName, role } // Email will be sent to admin notification
-        });
-      } catch (e) {
-        console.log("Notification sent or skipped");
-      }
-
-      return { userId, role };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["editors"] });
-      queryClient.invalidateQueries({ queryKey: ["pending-users"] });
-      setGrantRoleUser(null);
-      toast({ title: "تم منح الصلاحيات", description: "تم منح الصلاحيات للمستخدم بنجاح" });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "خطأ",
-        description: error.message || "فشل في منح الصلاحيات",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "editor" }) => {
-      const { error } = await supabase
+      const { error: roleError } = await supabase
         .from("user_roles")
         .update({ role })
         .eq("user_id", userId);
 
-      if (error) throw error;
+      if (roleError) throw roleError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["editors"] });
-      setEditingUserId(null);
-      toast({ title: "تم التحديث", description: "تم تحديث الدور بنجاح" });
+      setEditDialogOpen(false);
+      setEditingUser(null);
+      toast({ title: "تم التحديث", description: "تم تحديث بيانات المستخدم بنجاح" });
     },
     onError: () => {
-      toast({ title: "خطأ", description: "فشل في تحديث الدور", variant: "destructive" });
+      toast({ title: "خطأ", description: "فشل في تحديث البيانات", variant: "destructive" });
     },
   });
 
@@ -269,12 +183,11 @@ const Editors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["editors"] });
-      queryClient.invalidateQueries({ queryKey: ["pending-users"] });
       setDeleteId(null);
-      toast({ title: "تم الحذف", description: "تم حذف صلاحيات المحرر بنجاح" });
+      toast({ title: "تم الحذف", description: "تم حذف صلاحيات المستخدم بنجاح" });
     },
     onError: () => {
-      toast({ title: "خطأ", description: "فشل في حذف المحرر", variant: "destructive" });
+      toast({ title: "خطأ", description: "فشل في حذف المستخدم", variant: "destructive" });
     },
   });
 
@@ -294,332 +207,294 @@ const Editors = () => {
     setIsCreating(false);
   };
 
-  const handleGrantRole = () => {
-    if (!grantRoleUser) return;
-    grantRoleMutation.mutate({
-      userId: grantRoleUser.user_id,
-      role: selectedRole,
-      fullName: grantRoleUser.full_name || "",
+  const handleEdit = (editor: EditorData) => {
+    setEditingUser(editor);
+    setEditFormData({ fullName: editor.full_name, role: editor.role as "admin" | "editor" });
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateSubmit = () => {
+    if (!editingUser) return;
+    updateMutation.mutate({
+      userId: editingUser.user_id,
+      fullName: editFormData.fullName,
+      role: editFormData.role,
     });
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
   };
 
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "admin":
-        return (
-          <Badge className="bg-red-500 hover:bg-red-600">
-            <Shield className="h-3 w-3 ml-1" />
-            مسؤول
-          </Badge>
-        );
+        return <Badge className="bg-primary text-primary-foreground px-4 py-1">مدير</Badge>;
       case "editor":
-        return (
-          <Badge className="bg-blue-500 hover:bg-blue-600">
-            <UserCog className="h-3 w-3 ml-1" />
-            محرر
-          </Badge>
-        );
+        return <Badge className="bg-slate-600 text-white px-4 py-1">محرر</Badge>;
       default:
         return <Badge variant="secondary">{role}</Badge>;
     }
   };
 
-  return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">إدارة المحررين</h1>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setFormData(defaultForm)}>
-                <Plus className="h-4 w-4 ml-2" />
-                إضافة محرر
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]" dir="rtl">
-              <DialogHeader>
-                <DialogTitle>إضافة محرر جديد</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">الاسم الكامل</Label>
-                  <Input
-                    id="fullName"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    placeholder="أدخل الاسم الكامل"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">البريد الإلكتروني</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="example@email.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">كلمة المرور</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="أدخل كلمة المرور"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">الدور</Label>
-                  <Select
-                    value={formData.role}
-                    onValueChange={(value: "admin" | "editor") => setFormData({ ...formData, role: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر الدور" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="editor">محرر</SelectItem>
-                      <SelectItem value="admin">مسؤول</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
-                <Button onClick={handleSubmit} disabled={isCreating}>
-                  {isCreating && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                  إضافة
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <Tabs defaultValue="editors" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="editors" className="flex items-center gap-2">
-              <UserCog className="h-4 w-4" />
-              المحررون ({editors?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              في انتظار الموافقة ({pendingUsers?.length || 0})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="editors">
-            <Card>
-              <CardHeader>
-                <CardTitle>المحررون والمسؤولون</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : editors && editors.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>الاسم</TableHead>
-                        <TableHead>الدور</TableHead>
-                        <TableHead>تاريخ الإضافة</TableHead>
-                        <TableHead className="text-left">الإجراءات</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {editors.map((editor) => (
-                        <TableRow key={editor.id}>
-                          <TableCell className="font-medium">{editor.full_name}</TableCell>
-                          <TableCell>
-                            {editingUserId === editor.user_id ? (
-                              <Select
-                                value={editor.role}
-                                onValueChange={(value: "admin" | "editor") => {
-                                  updateRoleMutation.mutate({ userId: editor.user_id, role: value });
-                                }}
-                              >
-                                <SelectTrigger className="w-32">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="editor">محرر</SelectItem>
-                                  <SelectItem value="admin">مسؤول</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              getRoleBadge(editor.role)
-                            )}
-                          </TableCell>
-                          <TableCell>{new Date(editor.created_at).toLocaleDateString("ar")}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setEditingUserId(editingUserId === editor.user_id ? null : editor.user_id)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              {editor.user_id !== user?.id && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => setDeleteId(editor.user_id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">لا يوجد محررون حتى الآن</p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="pending">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  المستخدمون في انتظار الموافقة
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loadingPending ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : pendingUsers && pendingUsers.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>الاسم</TableHead>
-                        <TableHead>تاريخ التسجيل</TableHead>
-                        <TableHead className="text-left">الإجراءات</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pendingUsers.map((pendingUser) => (
-                        <TableRow key={pendingUser.user_id}>
-                          <TableCell className="font-medium">
-                            {pendingUser.full_name || "بدون اسم"}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(pendingUser.created_at).toLocaleDateString("ar")}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                setGrantRoleUser(pendingUser);
-                                setSelectedRole("editor");
-                              }}
-                              className="flex items-center gap-2"
-                            >
-                              <UserPlus className="h-4 w-4" />
-                              منح صلاحيات
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-8">
-                    <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">لا يوجد مستخدمون في انتظار الموافقة</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Grant Role Dialog */}
-        <Dialog open={!!grantRoleUser} onOpenChange={() => setGrantRoleUser(null)}>
-          <DialogContent className="sm:max-w-[400px]" dir="rtl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" />
-                منح صلاحيات للمستخدم
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="font-medium">{grantRoleUser?.full_name || "بدون اسم"}</p>
-                <p className="text-sm text-muted-foreground">
-                  تسجيل: {grantRoleUser && new Date(grantRoleUser.created_at).toLocaleDateString("ar")}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>اختر الدور</Label>
-                <Select value={selectedRole} onValueChange={(v: "admin" | "editor") => setSelectedRole(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="editor">
-                      <div className="flex items-center gap-2">
-                        <UserCog className="h-4 w-4" />
-                        محرر
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="admin">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        مسؤول
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg text-sm">
-                <Mail className="h-4 w-4 text-blue-500" />
-                <span>سيتم إرسال إشعار بريدي للمستخدم</span>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setGrantRoleUser(null)}>إلغاء</Button>
-              <Button onClick={handleGrantRole} disabled={grantRoleMutation.isPending}>
-                {grantRoleMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                منح الصلاحيات
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-          <AlertDialogContent dir="rtl">
-            <AlertDialogHeader>
-              <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-              <AlertDialogDescription>
-                سيتم إزالة صلاحيات هذا المستخدم. لن يتمكن بعدها من الوصول للوحة التحكم.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="gap-2">
-              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => deleteId && deleteEditorMutation.mutate(deleteId)}
-              >
-                حذف
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-    </AdminLayout>
+    );
+  }
+
+  if (userRole !== "admin") {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-background" dir="rtl">
+      {/* Header */}
+      <div className="bg-white dark:bg-card shadow-sm border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-foreground">إدارة المستخدمين</h1>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => navigate("/admin")} className="flex items-center gap-2">
+                العودة للوحة التحكم
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" onClick={handleSignOut} className="flex items-center gap-2">
+                تسجيل الخروج
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        <Card className="max-w-3xl mx-auto">
+          <CardContent className="p-6">
+            {/* Section Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Users className="h-6 w-6 text-primary" />
+                <div>
+                  <h2 className="text-xl font-bold">المستخدمون</h2>
+                  <p className="text-sm text-muted-foreground">إدارة المستخدمين وصلاحياتهم</p>
+                </div>
+              </div>
+              <Button onClick={() => { setFormData(defaultForm); setDialogOpen(true); }} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                إضافة مستخدم
+              </Button>
+            </div>
+
+            {/* Users List */}
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : editors && editors.length > 0 ? (
+              <div className="space-y-4">
+                {editors.map((editor) => {
+                  const isCurrentUser = editor.user_id === user?.id;
+                  return (
+                    <div
+                      key={editor.id}
+                      className={`flex items-center justify-between p-4 rounded-lg border ${
+                        isCurrentUser ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900" : "bg-white dark:bg-card"
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                          isCurrentUser ? "bg-red-100 text-red-500" : "bg-blue-100 text-blue-500"
+                        }`}>
+                          <Pencil className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{editor.full_name}</span>
+                            {isCurrentUser && <span className="text-xs text-muted-foreground">(أنت)</span>}
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {editor.role === "admin" ? "مدير" : "محرر"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        {getRoleBadge(editor.role)}
+                        
+                        {isCurrentUser ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate("/admin/profile")}
+                            className="flex items-center gap-2"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            تعديل بياناتي
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(editor)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => setDeleteId(editor.user_id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">لا يوجد مستخدمون حتى الآن</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Add User Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة مستخدم جديد</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">الاسم الكامل</Label>
+              <Input
+                id="fullName"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                placeholder="أدخل الاسم الكامل"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">البريد الإلكتروني</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="example@email.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">كلمة المرور</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="أدخل كلمة المرور"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">الصلاحية</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value: "admin" | "editor") => setFormData({ ...formData, role: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الصلاحية" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="editor">محرر</SelectItem>
+                  <SelectItem value="admin">مدير</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>إلغاء</Button>
+            <Button onClick={handleSubmit} disabled={isCreating}>
+              {isCreating && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              إضافة
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تعديل بيانات المستخدم</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editFullName">الاسم الكامل</Label>
+              <Input
+                id="editFullName"
+                value={editFormData.fullName}
+                onChange={(e) => setEditFormData({ ...editFormData, fullName: e.target.value })}
+                placeholder="أدخل الاسم الكامل"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editRole">الصلاحية</Label>
+              <Select
+                value={editFormData.role}
+                onValueChange={(value: "admin" | "editor") => setEditFormData({ ...editFormData, role: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الصلاحية" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="editor">محرر</SelectItem>
+                  <SelectItem value="admin">مدير</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>إلغاء</Button>
+            <Button onClick={handleUpdateSubmit} disabled={updateMutation.isPending}>
+              {updateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              حفظ التغييرات
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم إزالة صلاحيات هذا المستخدم. لن يتمكن بعدها من الوصول للوحة التحكم.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteId && deleteEditorMutation.mutate(deleteId)}
+            >
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 
