@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -68,7 +68,7 @@ interface PendingUser {
 
 const Editors = () => {
   const navigate = useNavigate();
-  const { userRole, user } = useAuth();
+  const { userRole, user, loading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -80,9 +80,26 @@ const Editors = () => {
   const [grantRoleUser, setGrantRoleUser] = useState<PendingUser | null>(null);
   const [selectedRole, setSelectedRole] = useState<"admin" | "editor">("editor");
 
-  // Redirect if not admin
+  // Redirect if not admin using useEffect
+  useEffect(() => {
+    if (!loading && userRole !== "admin") {
+      navigate("/admin");
+    }
+  }, [userRole, loading, navigate]);
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Don't render if not admin
   if (userRole !== "admin") {
-    navigate("/admin");
     return null;
   }
 
