@@ -23,20 +23,20 @@ const Navigation = () => {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <nav className="bg-nav sticky top-0 z-50 shadow-md">
+    <nav className="bg-nav sticky top-0 z-50 border-y border-foreground/10">
       <div className="container">
         <div className="flex items-center justify-between">
           {/* Left side - Search & Video */}
           <div className="flex items-center gap-1 md:gap-2">
-            <button className="p-2 text-nav-foreground hover:text-accent transition-colors">
-              <Search size={18} className="md:w-5 md:h-5" />
+            <button className="p-2 text-nav-foreground/80 hover:text-accent transition-colors">
+              <Search size={16} />
             </button>
             <Link
               to="/category/video"
-              className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 text-nav-foreground hover:text-accent transition-colors"
+              className="flex items-center gap-2 px-2 md:px-3 py-2 text-nav-foreground/90 hover:text-accent transition-colors"
             >
-              <span className="text-xs md:text-sm font-medium">فيديو</span>
-              <FaYoutube size={16} className="md:w-[18px] md:h-[18px] text-breaking" />
+              <span className="text-[11px] md:text-xs tracking-[0.2em] uppercase">Video</span>
+              <FaYoutube size={14} className="text-breaking" />
             </Link>
           </div>
 
@@ -50,16 +50,16 @@ const Navigation = () => {
           </button>
 
           {/* Desktop Navigation */}
-          <ul className="hidden lg:flex items-center">
+          <ul className="hidden lg:flex items-center divide-x divide-x-reverse divide-foreground/10">
             {navItems.map((item) => (
               <li key={item.href}>
                 <Link
                   to={item.href}
                   className={cn(
-                    "block px-2 xl:px-3 py-3 text-xs xl:text-sm font-medium transition-colors whitespace-nowrap",
+                    "block px-3 xl:px-4 py-4 text-[12px] xl:text-[13px] tracking-wide font-medium transition-colors whitespace-nowrap relative",
                     location.pathname === item.href
-                      ? "text-accent"
-                      : "text-nav-foreground hover:text-accent"
+                      ? "text-accent after:absolute after:bottom-0 after:inset-x-3 after:h-[2px] after:bg-accent"
+                      : "text-nav-foreground/90 hover:text-accent"
                   )}
                 >
                   {item.label}
