@@ -1,37 +1,63 @@
 import { Link } from "react-router-dom";
+import { Search } from "lucide-react";
 
 const Header = () => {
+  const today = new Date().toLocaleDateString("ar-EG", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <header className="bg-header py-3 md:py-4">
-      <div className="container flex flex-col-reverse md:flex-row items-center justify-between gap-4">
-        {/* Ad Space - Hidden on mobile, visible on tablet+ */}
-        <div className="hidden md:flex flex-1">
-          <div className="bg-header/50 border border-header-foreground/20 rounded h-12 lg:h-16 w-full flex items-center justify-center text-header-foreground/50 text-xs lg:text-sm">
-            مساحة إعلانية 728x90
-          </div>
+    <header className="bg-background border-b border-border">
+      {/* Gold hairline accent */}
+      <div className="h-[3px] w-full" style={{ background: "var(--gradient-gold)" }} />
+
+      {/* Date strip */}
+      <div className="container flex items-center justify-between py-2 text-[11px] md:text-xs text-muted-foreground border-b border-border/60">
+        <span className="tracking-wide">{today}</span>
+        <span className="hidden md:inline tracking-[0.2em] uppercase text-accent font-semibold">
+          منبر إعلامي حر · مستقل
+        </span>
+      </div>
+
+      {/* Masthead */}
+      <div className="container py-6 md:py-10 grid grid-cols-3 items-center">
+        {/* Search */}
+        <div className="flex justify-start">
+          <button
+            aria-label="بحث"
+            className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center rounded-full border border-border hover:border-accent hover:text-accent transition-colors"
+          >
+            <Search className="w-4 h-4" />
+          </button>
         </div>
-        
-        <Link to="/" className="flex items-center gap-2 md:gap-3 md:mr-8">
-          <div className="text-left">
-            <h1 className="text-2xl md:text-3xl font-bold text-header-foreground">
-              <span className="text-accent">حصاد</span> اليوم
-            </h1>
-            <p className="text-[10px] md:text-xs text-header-foreground/80">منبر إعلامي يمني حر ومستقل</p>
-          </div>
-          <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center">
-            <svg viewBox="0 0 100 100" className="w-10 h-10 md:w-14 md:h-14 text-accent">
-              <path
-                fill="currentColor"
-                d="M50 5 C60 5 70 10 75 20 L85 45 C90 55 85 65 75 70 L60 75 L65 95 L50 80 L35 95 L40 75 L25 70 C15 65 10 55 15 45 L25 20 C30 10 40 5 50 5Z"
-              />
-              <circle cx="50" cy="40" r="15" fill="hsl(var(--header-bg))" />
-              <path
-                fill="currentColor"
-                d="M45 35 L55 40 L45 45 Z"
-              />
-            </svg>
-          </div>
+
+        {/* Logo */}
+        <Link to="/" className="flex flex-col items-center text-center group">
+          <span className="text-[10px] md:text-xs tracking-[0.35em] uppercase text-accent mb-1">
+            HASAD AL · YOUM
+          </span>
+          <h1 className="font-serif-ar text-3xl md:text-5xl lg:text-6xl leading-none text-foreground">
+            حصاد
+            <span className="mx-2 text-accent">·</span>
+            اليوم
+          </h1>
+          <span className="mt-2 text-[10px] md:text-xs text-muted-foreground tracking-widest">
+            صحيفة إلكترونية مستقلة
+          </span>
         </Link>
+
+        {/* Auth / actions */}
+        <div className="flex justify-end">
+          <Link
+            to="/auth"
+            className="hidden md:inline-flex items-center px-4 py-2 text-xs tracking-widest uppercase border border-foreground/80 hover:bg-foreground hover:text-background transition-colors"
+          >
+            دخول
+          </Link>
+        </div>
       </div>
     </header>
   );
