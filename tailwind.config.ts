@@ -15,6 +15,8 @@ export default {
     extend: {
       fontFamily: {
         tajawal: ["Tajawal", "sans-serif"],
+        "serif-ar": ["Amiri", "Playfair Display", "Tajawal", "serif"],
+        playfair: ["Playfair Display", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
