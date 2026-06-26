@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_banners: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          ends_at: string | null
+          html_code: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          link_url: string | null
+          name: string
+          position: string
+          starts_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          ends_at?: string | null
+          html_code?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          name: string
+          position: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          ends_at?: string | null
+          html_code?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          link_url?: string | null
+          name?: string
+          position?: string
+          starts_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       authors: {
         Row: {
           avatar_url: string | null
@@ -101,6 +146,47 @@ export type Database = {
         }
         Relationships: []
       }
+      category_settings: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          display_order: number | null
+          display_style: string | null
+          id: string
+          posts_per_page: number | null
+          show_in_menu: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          display_order?: number | null
+          display_style?: string | null
+          id?: string
+          posts_per_page?: number | null
+          show_in_menu?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          display_order?: number | null
+          display_style?: string | null
+          id?: string
+          posts_per_page?: number | null
+          show_in_menu?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_settings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media: {
         Row: {
           alt_text: string | null
@@ -133,6 +219,101 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      migrations_log: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          migration_name: string
+          sql_summary: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          migration_name: string
+          sql_summary?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          migration_name?: string
+          sql_summary?: string | null
+        }
+        Relationships: []
+      }
+      notification_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean | null
+          id: string
+          notify_on_breaking: boolean | null
+          notify_on_new_post: boolean | null
+          updated_at: string
+          vapid_private_key: string | null
+          vapid_public_key: string | null
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          notify_on_breaking?: boolean | null
+          notify_on_new_post?: boolean | null
+          updated_at?: string
+          vapid_private_key?: string | null
+          vapid_public_key?: string | null
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          notify_on_breaking?: boolean | null
+          notify_on_new_post?: boolean | null
+          updated_at?: string
+          vapid_private_key?: string | null
+          vapid_public_key?: string | null
+        }
+        Relationships: []
+      }
+      post_media: {
+        Row: {
+          caption: string | null
+          created_at: string
+          display_order: number | null
+          id: string
+          media_type: string
+          media_url: string
+          post_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          media_type: string
+          media_url: string
+          post_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          media_type?: string
+          media_url?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_revisions: {
         Row: {
@@ -237,6 +418,7 @@ export type Database = {
       posts: {
         Row: {
           author_id: string | null
+          badge: string | null
           category_id: string | null
           content: string | null
           created_at: string
@@ -247,6 +429,7 @@ export type Database = {
           id: string
           is_breaking: boolean | null
           is_featured: boolean | null
+          is_pinned: boolean | null
           meta_description: string | null
           meta_keywords: string | null
           meta_title: string | null
@@ -264,6 +447,7 @@ export type Database = {
         }
         Insert: {
           author_id?: string | null
+          badge?: string | null
           category_id?: string | null
           content?: string | null
           created_at?: string
@@ -274,6 +458,7 @@ export type Database = {
           id?: string
           is_breaking?: boolean | null
           is_featured?: boolean | null
+          is_pinned?: boolean | null
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
@@ -291,6 +476,7 @@ export type Database = {
         }
         Update: {
           author_id?: string | null
+          badge?: string | null
           category_id?: string | null
           content?: string | null
           created_at?: string
@@ -301,6 +487,7 @@ export type Database = {
           id?: string
           is_breaking?: boolean | null
           is_featured?: boolean | null
+          is_pinned?: boolean | null
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
@@ -356,6 +543,36 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
@@ -438,7 +655,9 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_views: { Args: { post_id: string }; Returns: undefined }
       is_admin_or_editor: { Args: { _user_id: string }; Returns: boolean }
+      is_editor: { Args: { _user_id?: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "editor" | "author"
