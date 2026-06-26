@@ -1,36 +1,55 @@
 import { Link } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
 import { usePostsByCategory } from "@/hooks/usePosts";
 import NewsCard from "./NewsCard";
-import SectionHeader from "./SectionHeader";
 
 interface NewsSectionProps {
   title: string;
   categorySlug: string;
   layout?: "featured" | "grid" | "list" | "opinions";
   limit?: number;
-  sectionVariant?: "default" | "opinions" | "sports" | "tech";
 }
 
-const NewsSectionSkeleton = ({ title, categorySlug, sectionVariant }: { title: string; categorySlug: string; sectionVariant?: string }) => (
-  <section className="mb-10 md:mb-14">
-    <SectionHeader title={title} categorySlug={categorySlug} variant={(sectionVariant as any) || "default"} />
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-muted rounded h-48 md:h-64 animate-pulse" />
-      ))}
-    </div>
-  </section>
-);
-
-const NewsSection = ({ title, categorySlug, layout = "grid", limit, sectionVariant = "default" }: NewsSectionProps) => {
+const NewsSection = ({ title, categorySlug, layout = "grid", limit }: NewsSectionProps) => {
   const { data: posts, isLoading } = usePostsByCategory(categorySlug, limit);
 
-  if (isLoading) return <NewsSectionSkeleton title={title} categorySlug={categorySlug} sectionVariant={sectionVariant} />;
-  if (!posts || posts.length === 0) return null;
+  if (isLoading) {
+    return (
+      <section className="mb-8 md:mb-10">
+        <div className="flex items-center justify-between mb-4 md:mb-6">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-1 h-6 md:h-8 bg-accent rounded-full" />
+            <h2 className="text-lg md:text-xl font-bold text-foreground">{title}</h2>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-muted rounded-lg h-48 md:h-64 animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (!posts || posts.length === 0) {
+    return null;
+  }
 
   return (
-    <section className="mb-10 md:mb-14">
-      <SectionHeader title={title} categorySlug={categorySlug} variant={sectionVariant} />
+    <section className="mb-8 md:mb-10">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="w-1 h-6 md:h-8 bg-accent rounded-full" />
+          <h2 className="text-lg md:text-xl font-bold text-foreground">{title}</h2>
+        </div>
+        <Link
+          to={`/category/${categorySlug}`}
+          className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground hover:text-accent transition-colors"
+        >
+          <span>المزيد</span>
+          <ChevronLeft size={14} className="md:w-4 md:h-4" />
+        </Link>
+      </div>
 
       {layout === "featured" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">

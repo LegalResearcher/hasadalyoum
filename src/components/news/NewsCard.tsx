@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Clock, Eye } from "lucide-react";
 import { Post } from "@/hooks/usePosts";
 
 interface NewsCardProps {
@@ -7,48 +6,40 @@ interface NewsCardProps {
   variant?: "default" | "horizontal" | "small" | "opinion";
 }
 
-const formatDate = (dateString: string | null) => {
-  if (!dateString) return "";
-  return new Date(dateString).toLocaleDateString("ar-EG", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
-
-const readingTime = (text: string | null) => {
-  if (!text) return "2 د";
-  const words = text.split(" ").length;
-  return `${Math.max(1, Math.ceil(words / 200))} د`;
-};
-
 const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("ar-EG", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   if (variant === "opinion") {
     return (
       <Link to={`/article/${post.slug}`} className="block group">
-        <div className="bg-card p-4 hover:shadow-lg transition-shadow border border-border group-hover:border-accent/30">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="bg-card rounded-lg p-3 md:p-4 hover:shadow-lg transition-shadow">
+          <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-3">
             {post.author?.avatar_url ? (
               <img
                 src={post.author.avatar_url}
                 alt={post.author.name}
-                className="w-14 h-14 rounded-full object-cover border-2 border-accent"
+                className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-2 border-accent"
               />
             ) : (
-              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center border-2 border-accent flex-shrink-0">
-                <span className="text-2xl font-bold text-muted-foreground">
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-muted flex items-center justify-center border-2 border-accent">
+                <span className="text-xl md:text-2xl font-bold text-muted-foreground">
                   {post.author?.name?.charAt(0) || "؟"}
                 </span>
               </div>
             )}
             <div>
-              <p className="font-bold text-foreground text-sm">{post.author?.name || "كاتب"}</p>
-              <p className="text-xs text-muted-foreground">{formatDate(post.published_at)}</p>
+              <p className="font-bold text-foreground text-sm md:text-base">{post.author?.name || "كاتب"}</p>
+              <p className="text-xs md:text-sm text-muted-foreground">{formatDate(post.published_at)}</p>
             </div>
           </div>
-          {/* Opinion divider line */}
-          <div className="w-8 h-px mb-3" style={{ background: "hsl(var(--accent))" }} />
-          <h3 className="font-bold text-foreground text-sm group-hover:text-accent transition-colors line-clamp-3 leading-relaxed">
+          <h3 className="font-bold text-foreground text-sm md:text-base group-hover:text-accent transition-colors line-clamp-2">
             {post.title}
           </h3>
         </div>
@@ -60,30 +51,23 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
     return (
       <Link
         to={`/article/${post.slug}`}
-        className="flex gap-3 group bg-card overflow-hidden hover:shadow-md transition-shadow border border-border"
+        className="flex gap-3 md:gap-4 group bg-card rounded-lg overflow-hidden hover:shadow-md transition-shadow"
       >
-        <div className="w-24 h-20 sm:w-28 sm:h-[88px] flex-shrink-0 overflow-hidden">
+        <div className="w-24 h-20 sm:w-32 sm:h-24 flex-shrink-0 overflow-hidden">
           <img
             src={post.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400"}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </div>
-        <div className="flex-1 py-2 pl-2 flex flex-col justify-between">
-          <div>
-            {post.category && (
-              <span className="text-[10px] text-accent font-semibold tracking-wide">{post.category.name}</span>
-            )}
-            <h4 className="text-xs font-bold text-foreground line-clamp-2 mt-0.5 group-hover:text-accent transition-colors leading-snug">
-              {post.title}
-            </h4>
-          </div>
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-            <Clock size={9} />
-            <span>{readingTime(post.excerpt)}</span>
-            <span>·</span>
-            <span>{formatDate(post.published_at)}</span>
-          </div>
+        <div className="flex-1 py-1.5 md:py-2 pl-2">
+          {post.category && (
+            <span className="text-[10px] md:text-xs text-accent font-medium">{post.category.name}</span>
+          )}
+          <h4 className="text-xs md:text-sm font-bold text-foreground line-clamp-2 mt-0.5 md:mt-1 group-hover:text-accent transition-colors">
+            {post.title}
+          </h4>
+          <span className="text-[10px] md:text-xs text-muted-foreground mt-1 block">{formatDate(post.published_at)}</span>
         </div>
       </Link>
     );
@@ -92,37 +76,29 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
   if (variant === "small") {
     return (
       <Link to={`/article/${post.slug}`} className="block group">
-        <div className="relative aspect-video overflow-hidden mb-2">
+        <div className="relative aspect-video rounded-lg overflow-hidden mb-2">
           <img
             src={post.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400"}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
           {post.category && (
-            <span className="absolute top-2 right-2 bg-accent text-white px-2 py-0.5 text-[10px] font-semibold">
+            <span className="absolute top-2 right-2 bg-accent text-accent-foreground px-1.5 md:px-2 py-0.5 rounded text-[10px] md:text-xs font-medium">
               {post.category.name}
             </span>
           )}
         </div>
-        <h4 className="text-xs font-bold text-foreground line-clamp-2 group-hover:text-accent transition-colors leading-snug mb-1.5">
+        <h4 className="text-xs md:text-sm font-bold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
           {post.title}
         </h4>
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <Clock size={9} />
-          <span>{readingTime(post.excerpt)}</span>
-          <span>·</span>
-          <Eye size={9} />
-          <span>{Math.floor(Math.random() * 5 + 1)}K</span>
-        </div>
       </Link>
     );
   }
 
-  // default — large card
   return (
     <Link
       to={`/article/${post.slug}`}
-      className="block group bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-border"
+      className="block group bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
     >
       <div className="relative aspect-video overflow-hidden">
         <img
@@ -131,30 +107,19 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
         {post.category && (
-          <span className="absolute top-3 right-3 bg-accent text-white px-2.5 py-0.5 text-xs font-semibold">
+          <span className="absolute top-2 md:top-3 right-2 md:right-3 bg-accent text-accent-foreground px-2 md:px-3 py-0.5 md:py-1 rounded text-xs md:text-sm font-medium">
             {post.category.name}
           </span>
         )}
       </div>
-      <div className="p-4">
-        <h3 className="font-bold text-foreground text-sm md:text-base line-clamp-2 group-hover:text-accent transition-colors leading-snug mb-2">
+      <div className="p-3 md:p-4">
+        <h3 className="font-bold text-foreground text-sm md:text-base line-clamp-2 group-hover:text-accent transition-colors leading-relaxed">
           {post.title}
         </h3>
         {post.excerpt && (
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{post.excerpt}</p>
+          <p className="text-xs md:text-sm text-muted-foreground mt-1.5 md:mt-2 line-clamp-2">{post.excerpt}</p>
         )}
-        <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground border-t border-border pt-2.5">
-          <div className="flex items-center gap-1">
-            <Clock size={9} />
-            <span>{readingTime(post.excerpt)} قراءة</span>
-          </div>
-          <span>·</span>
-          <span>{formatDate(post.published_at)}</span>
-          <span className="mr-auto flex items-center gap-1">
-            <Eye size={9} />
-            <span>{Math.floor(Math.random() * 8 + 1)}K</span>
-          </span>
-        </div>
+        <span className="text-[10px] md:text-xs text-dateColor mt-1.5 md:mt-2 block">{formatDate(post.published_at)}</span>
       </div>
     </Link>
   );
