@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "الرئيسية", href: "/" },
+  { label: "الأكثر قراءة", href: "/most-read" },
   { label: "أخبار محلية", href: "/category/local-news" },
   { label: "أخبار وتقارير", href: "/category/news-reports" },
   { label: "اليمن في الصحافة", href: "/category/yemen-press" },
