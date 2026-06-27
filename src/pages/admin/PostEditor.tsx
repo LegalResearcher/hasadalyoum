@@ -21,7 +21,7 @@ const PostEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const isNew = !id || id === "new";
 
   const { data: categories } = useCategories();
@@ -74,7 +74,7 @@ const PostEditor = () => {
         additional_images: [],
         category_id: post.category_id || "",
         author_id: post.author_id || "",
-        status: (post.status as "draft" | "scheduled" | "published" | "hidden") || "draft",
+        status: post.status || "draft",
         is_featured: post.is_featured || false,
         is_breaking: post.is_breaking || false,
         source_type: post.source_type || "حصاد اليوم | خاص",
@@ -166,7 +166,6 @@ const PostEditor = () => {
         ...rest,
         word_count: wordCount,
         reading_time: readingTime,
-        user_id: user?.id || null,
         published_at: formData.status === "published" ? new Date().toISOString() : null,
         scheduled_at: formData.scheduled_at || null,
         hide_after: formData.hide_after || null,
@@ -175,9 +174,11 @@ const PostEditor = () => {
       };
 
       if (isNew) {
-        const { error } = await supabase.from("posts").insert(postData);
+        const { error } = await supabase.from("posts").insert({ ...postData, user_id: user?.id || null });
         if (error) throw error;
       } else {
+        // لا نُعيد كتابة user_id عند التعديل، لنحافظ على الكاتب الأصلي للمنشور
+        // (مهم لصلاحيات RLS التي تتيح للكاتب تعديل منشوراته الخاصة فقط)
         const { error } = await supabase.from("posts").update(postData).eq("id", id);
         if (error) throw error;
       }
@@ -461,20 +462,27 @@ const PostEditor = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>الحالة</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: any) => setFormData((prev) => ({ ...prev, status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">مسودة</SelectItem>
-                      <SelectItem value="published">منشور</SelectItem>
-                      <SelectItem value="scheduled">مجدول</SelectItem>
-                      <SelectItem value="hidden">مخفي</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {userRole === "author" ? (
+                    <p className="text-sm text-muted-foreground bg-amber-50 border border-amber-200 rounded p-2">
+                      🔍 سيُرسل هذا المنشور للمراجعة من قبل الإدارة قبل نشره — لا يمكن للكاتب النشر مباشرة.
+                    </p>
+                  ) : (
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value: any) => setFormData((prev) => ({ ...prev, status: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">مسودة</SelectItem>
+                        <SelectItem value="published">منشور</SelectItem>
+                        <SelectItem value="scheduled">مجدول</SelectItem>
+                        <SelectItem value="under_review">🔍 قيد المراجعة</SelectItem>
+                        <SelectItem value="hidden">مخفي</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 {formData.status === "scheduled" && (
