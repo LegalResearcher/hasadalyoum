@@ -6,6 +6,7 @@ import Layout from "@/components/layout/Layout";
 import { usePostBySlug, usePosts, useIncrementPostView } from "@/hooks/usePosts";
 import NewsCard from "@/components/news/NewsCard";
 import VideoEmbed from "@/components/news/VideoEmbed";
+import AdSlot from "@/components/news/AdSlot";
 import { FaFacebookF, FaTwitter, FaWhatsapp, FaTelegram } from "react-icons/fa";
 import { Calendar, User, Eye } from "lucide-react";
 import {
@@ -114,6 +115,8 @@ const Article = () => {
           )}
         </div>
       </article>
+
+      <AdSlot position="in-article" className="my-6 md:my-8" />
 
       {filteredRelated.length > 0 && (
         <section className="mt-8 md:mt-10">
