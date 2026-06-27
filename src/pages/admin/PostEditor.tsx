@@ -74,7 +74,7 @@ const PostEditor = () => {
         additional_images: [],
         category_id: post.category_id || "",
         author_id: post.author_id || "",
-        status: post.status || "draft",
+        status: (post.status as "draft" | "scheduled" | "published" | "hidden") || "draft",
         is_featured: post.is_featured || false,
         is_breaking: post.is_breaking || false,
         source_type: post.source_type || "حصاد اليوم | خاص",

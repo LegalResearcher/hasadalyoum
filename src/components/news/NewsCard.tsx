@@ -19,27 +19,27 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
   if (variant === "opinion") {
     return (
       <Link to={`/article/${post.slug}`} className="block group">
-        <div className="bg-card rounded-lg p-3 md:p-4 hover:shadow-lg transition-shadow">
-          <div className="flex items-center gap-3 md:gap-4 mb-2 md:mb-3">
+        <div className="border-t border-border pt-4">
+          <div className="flex items-center gap-3 mb-3">
             {post.author?.avatar_url ? (
               <img
                 src={post.author.avatar_url}
                 alt={post.author.name}
-                className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-2 border-accent"
+                className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all"
               />
             ) : (
-              <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-muted flex items-center justify-center border-2 border-accent">
-                <span className="text-xl md:text-2xl font-bold text-muted-foreground">
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-muted flex items-center justify-center">
+                <span className="text-lg font-serif-ar text-muted-foreground">
                   {post.author?.name?.charAt(0) || "؟"}
                 </span>
               </div>
             )}
             <div>
-              <p className="font-bold text-foreground text-sm md:text-base">{post.author?.name || "كاتب"}</p>
-              <p className="text-xs md:text-sm text-muted-foreground">{formatDate(post.published_at)}</p>
+              <p className="font-serif-ar text-foreground text-sm md:text-base leading-tight">{post.author?.name || "كاتب"}</p>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground mt-0.5">رأي</p>
             </div>
           </div>
-          <h3 className="font-bold text-foreground text-sm md:text-base group-hover:text-accent transition-colors line-clamp-2">
+          <h3 className="font-serif-ar text-foreground text-base md:text-lg leading-snug group-hover:text-accent transition-colors line-clamp-3">
             {post.title}
           </h3>
         </div>
@@ -51,23 +51,23 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
     return (
       <Link
         to={`/article/${post.slug}`}
-        className="flex gap-3 md:gap-4 group bg-card rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+        className="flex gap-3 md:gap-4 group py-3 border-b border-border last:border-0"
       >
-        <div className="w-24 h-20 sm:w-32 sm:h-24 flex-shrink-0 overflow-hidden">
+        <div className="w-24 h-20 sm:w-32 sm:h-24 flex-shrink-0 overflow-hidden bg-muted">
           <img
             src={post.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400"}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </div>
-        <div className="flex-1 py-1.5 md:py-2 pl-2">
+        <div className="flex-1">
           {post.category && (
-            <span className="text-[10px] md:text-xs text-accent font-medium">{post.category.name}</span>
+            <span className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-accent font-semibold">{post.category.name}</span>
           )}
-          <h4 className="text-xs md:text-sm font-bold text-foreground line-clamp-2 mt-0.5 md:mt-1 group-hover:text-accent transition-colors">
+          <h4 className="font-serif-ar text-sm md:text-base text-foreground line-clamp-2 mt-1 leading-snug group-hover:text-accent transition-colors">
             {post.title}
           </h4>
-          <span className="text-[10px] md:text-xs text-muted-foreground mt-1 block">{formatDate(post.published_at)}</span>
+          <span className="text-[10px] md:text-xs text-muted-foreground mt-1.5 block">{formatDate(post.published_at)}</span>
         </div>
       </Link>
     );
@@ -76,21 +76,20 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
   if (variant === "small") {
     return (
       <Link to={`/article/${post.slug}`} className="block group">
-        <div className="relative aspect-video rounded-lg overflow-hidden mb-2">
+        <div className="relative aspect-[4/3] overflow-hidden mb-3 bg-muted">
           <img
             src={post.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400"}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          {post.category && (
-            <span className="absolute top-2 right-2 bg-accent text-accent-foreground px-1.5 md:px-2 py-0.5 rounded text-[10px] md:text-xs font-medium">
-              {post.category.name}
-            </span>
-          )}
         </div>
-        <h4 className="text-xs md:text-sm font-bold text-foreground line-clamp-2 group-hover:text-accent transition-colors">
+        {post.category && (
+          <span className="text-[10px] uppercase tracking-[0.18em] text-accent font-semibold">{post.category.name}</span>
+        )}
+        <h4 className="font-serif-ar text-sm md:text-base text-foreground line-clamp-3 mt-1 leading-snug group-hover:text-accent transition-colors">
           {post.title}
         </h4>
+        <span className="text-[10px] text-muted-foreground mt-1.5 block">{formatDate(post.published_at)}</span>
       </Link>
     );
   }
@@ -98,28 +97,26 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
   return (
     <Link
       to={`/article/${post.slug}`}
-      className="block group bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+      className="block group"
     >
-      <div className="relative aspect-video overflow-hidden">
+      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         <img
           src={post.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400"}
           alt={post.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
-        {post.category && (
-          <span className="absolute top-2 md:top-3 right-2 md:right-3 bg-accent text-accent-foreground px-2 md:px-3 py-0.5 md:py-1 rounded text-xs md:text-sm font-medium">
-            {post.category.name}
-          </span>
-        )}
       </div>
-      <div className="p-3 md:p-4">
-        <h3 className="font-bold text-foreground text-sm md:text-base line-clamp-2 group-hover:text-accent transition-colors leading-relaxed">
+      <div className="pt-3 md:pt-4">
+        {post.category && (
+          <span className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-accent font-semibold">{post.category.name}</span>
+        )}
+        <h3 className="font-serif-ar text-foreground text-base md:text-lg line-clamp-3 mt-1.5 leading-snug group-hover:text-accent transition-colors">
           {post.title}
         </h3>
         {post.excerpt && (
-          <p className="text-xs md:text-sm text-muted-foreground mt-1.5 md:mt-2 line-clamp-2">{post.excerpt}</p>
+          <p className="text-xs md:text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{post.excerpt}</p>
         )}
-        <span className="text-[10px] md:text-xs text-dateColor mt-1.5 md:mt-2 block">{formatDate(post.published_at)}</span>
+        <span className="text-[10px] md:text-xs text-muted-foreground mt-2 block">{formatDate(post.published_at)}</span>
       </div>
     </Link>
   );
