@@ -8,6 +8,8 @@ import Article from "./pages/Article";
 import Category from "./pages/Category";
 import MostReadPage from "./pages/MostReadPage";
 import RSSFeedsPage from "./pages/RSSFeedsPage";
+import PostRedirect from "./pages/PostRedirect";
+import NewsSlugRedirect from "./pages/NewsSlugRedirect";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/admin/Dashboard";
 import Posts from "./pages/admin/Posts";
@@ -37,6 +39,8 @@ const App = () => (
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/most-read" element={<MostReadPage />} />
           <Route path="/feed" element={<RSSFeedsPage />} />
+          <Route path="/post/:id" element={<PostRedirect />} />
+          <Route path="/news/:slug" element={<NewsSlugRedirect />} />
           
           {/* Auth */}
           <Route path="/auth" element={<Auth />} />
