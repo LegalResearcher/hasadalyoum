@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Article from "./pages/Article";
 import Category from "./pages/Category";
 import MostReadPage from "./pages/MostReadPage";
+import RSSFeedsPage from "./pages/RSSFeedsPage";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/admin/Dashboard";
 import Posts from "./pages/admin/Posts";
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/article/:slug" element={<Article />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/most-read" element={<MostReadPage />} />
+          <Route path="/feed" element={<RSSFeedsPage />} />
           
           {/* Auth */}
           <Route path="/auth" element={<Auth />} />
