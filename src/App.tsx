@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Article from "./pages/Article";
 import Category from "./pages/Category";
+import MostReadPage from "./pages/MostReadPage";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/admin/Dashboard";
 import Posts from "./pages/admin/Posts";
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/article/:slug" element={<Article />} />
           <Route path="/category/:slug" element={<Category />} />
+          <Route path="/most-read" element={<MostReadPage />} />
           
           {/* Auth */}
           <Route path="/auth" element={<Auth />} />
