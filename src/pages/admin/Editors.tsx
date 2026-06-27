@@ -38,7 +38,7 @@ interface EditorForm {
   email: string;
   password: string;
   fullName: string;
-  role: "admin" | "editor";
+  role: "admin" | "editor" | "author";
 }
 
 const defaultForm: EditorForm = {
@@ -55,6 +55,7 @@ interface EditorData {
   created_at: string;
   full_name: string;
   avatar_url: string | null;
+  email?: string;
 }
 
 const Editors = () => {
@@ -68,7 +69,7 @@ const Editors = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState<EditorForm>(defaultForm);
   const [editingUser, setEditingUser] = useState<EditorData | null>(null);
-  const [editFormData, setEditFormData] = useState({ fullName: "", role: "editor" as "admin" | "editor" });
+  const [editFormData, setEditFormData] = useState({ fullName: "", role: "editor" as "admin" | "editor" | "author" });
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
@@ -83,7 +84,7 @@ const Editors = () => {
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("*")
-        .in("role", ["admin", "editor"]);
+        .in("role", ["admin", "editor", "author"]);
 
       if (rolesError) throw rolesError;
 
@@ -95,12 +96,27 @@ const Editors = () => {
 
       if (profilesError) throw profilesError;
 
+      // جلب البريد الإلكتروني لكل مستخدم عبر دالة list-users
+      // (لا يُخزَّن البريد في جدولي profiles/user_roles، فقط في نظام Auth)
+      let emailByUserId: Record<string, string> = {};
+      try {
+        const { data: listData, error: listError } = await supabase.functions.invoke("list-users");
+        if (!listError && listData?.users) {
+          emailByUserId = Object.fromEntries(
+            listData.users.map((u: { id: string; email: string }) => [u.id, u.email])
+          );
+        }
+      } catch (e) {
+        console.error("فشل جلب البريد الإلكتروني للمستخدمين:", e);
+      }
+
       return roles.map((role) => {
         const profile = profiles.find((p) => p.user_id === role.user_id);
         return {
           ...role,
           full_name: profile?.full_name || `مستخدم ${role.user_id.slice(0, 7)}`,
           avatar_url: profile?.avatar_url,
+          email: emailByUserId[role.user_id],
         };
       });
     },
@@ -109,26 +125,22 @@ const Editors = () => {
 
   const createEditorMutation = useMutation({
     mutationFn: async (data: EditorForm) => {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: { full_name: data.fullName },
+      // إنشاء المستخدم من السيرفر مباشرة عبر Edge Function (create-user)
+      // بدلاً من supabase.auth.signUp() على العميل، والتي قد تستبدل
+      // جلسة الأدمن الحالية بجلسة المستخدم الجديد وتتطلب تأكيد بريد يدوي
+      const { data: result, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          email: data.email,
+          password: data.password,
+          fullName: data.fullName,
+          role: data.role,
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("فشل في إنشاء المستخدم");
+      if (error) throw error;
+      if (result?.error) throw new Error(result.error);
 
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: authData.user.id,
-        role: data.role,
-      });
-
-      if (roleError) throw roleError;
-
-      return authData.user;
+      return result.user;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["editors"] });
@@ -146,7 +158,7 @@ const Editors = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ userId, fullName, role }: { userId: string; fullName: string; role: "admin" | "editor" }) => {
+    mutationFn: async ({ userId, fullName, role }: { userId: string; fullName: string; role: "admin" | "editor" | "author" }) => {
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ full_name: fullName })
@@ -209,7 +221,7 @@ const Editors = () => {
 
   const handleEdit = (editor: EditorData) => {
     setEditingUser(editor);
-    setEditFormData({ fullName: editor.full_name, role: editor.role as "admin" | "editor" });
+    setEditFormData({ fullName: editor.full_name, role: editor.role as "admin" | "editor" | "author" });
     setEditDialogOpen(true);
   };
 
@@ -233,6 +245,8 @@ const Editors = () => {
         return <Badge className="bg-primary text-primary-foreground px-4 py-1">مدير</Badge>;
       case "editor":
         return <Badge className="bg-slate-600 text-white px-4 py-1">محرر</Badge>;
+      case "author":
+        return <Badge className="bg-emerald-600 text-white px-4 py-1">كاتب</Badge>;
       default:
         return <Badge variant="secondary">{role}</Badge>;
     }
@@ -317,8 +331,11 @@ const Editors = () => {
                             <span className="font-medium">{editor.full_name}</span>
                             {isCurrentUser && <span className="text-xs text-muted-foreground">(أنت)</span>}
                           </div>
+                          {editor.email && (
+                            <span className="text-xs text-muted-foreground block">{editor.email}</span>
+                          )}
                           <span className="text-sm text-muted-foreground">
-                            {editor.role === "admin" ? "مدير" : "محرر"}
+                            {editor.role === "admin" ? "مدير" : editor.role === "editor" ? "محرر" : "كاتب"}
                           </span>
                         </div>
                       </div>
@@ -410,12 +427,13 @@ const Editors = () => {
               <Label htmlFor="role">الصلاحية</Label>
               <Select
                 value={formData.role}
-                onValueChange={(value: "admin" | "editor") => setFormData({ ...formData, role: value })}
+                onValueChange={(value: "admin" | "editor" | "author") => setFormData({ ...formData, role: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="اختر الصلاحية" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="author">كاتب</SelectItem>
                   <SelectItem value="editor">محرر</SelectItem>
                   <SelectItem value="admin">مدير</SelectItem>
                 </SelectContent>
@@ -452,12 +470,13 @@ const Editors = () => {
               <Label htmlFor="editRole">الصلاحية</Label>
               <Select
                 value={editFormData.role}
-                onValueChange={(value: "admin" | "editor") => setEditFormData({ ...editFormData, role: value })}
+                onValueChange={(value: "admin" | "editor" | "author") => setEditFormData({ ...editFormData, role: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="اختر الصلاحية" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="author">كاتب</SelectItem>
                   <SelectItem value="editor">محرر</SelectItem>
                   <SelectItem value="admin">مدير</SelectItem>
                 </SelectContent>
