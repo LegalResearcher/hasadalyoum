@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import Layout from "@/components/layout/Layout";
 import HeroSlider from "@/components/news/HeroSlider";
 import NewsSection from "@/components/news/NewsSection";
+import MostRead from "@/components/news/MostRead";
 import { SITE_NAME, SITE_URL, SITE_LOGO } from "@/lib/seoHelpers";
 
 const Index = () => {
@@ -42,6 +43,7 @@ const Index = () => {
       </section>
 
       <NewsSection title="أخبار محلية" categorySlug="local-news" layout="featured" limit={5} />
+      <MostRead limit={6} />
       <NewsSection title="أخبار وتقارير" categorySlug="news-reports" layout="featured" limit={5} />
       <NewsSection title="اليمن في الصحافة" categorySlug="yemen-press" layout="grid" limit={4} />
       <NewsSection title="شؤون دولية" categorySlug="international" layout="grid" limit={3} />
