@@ -1,8 +1,19 @@
 import { Link } from "react-router-dom";
 import { FaFacebookF, FaTwitter, FaTelegram, FaYoutube, FaWhatsapp } from "react-icons/fa";
 import { Rss } from "lucide-react";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const Footer = () => {
+  const { data: settings } = useSiteSettings();
+
+  // قيم احتياطية تُستخدم فقط قبل اكتمال تحميل الإعدادات من قاعدة البيانات
+  const facebookUrl = settings?.facebook_url || "https://www.facebook.com/";
+  const twitterUrl = settings?.twitter_url || "https://x.com/hasadalyoum1";
+  const telegramUrl = settings?.telegram_url || "https://t.me/hasadalyoum";
+  const youtubeUrl = settings?.youtube_url || "https://youtube.com/";
+  const whatsappUrl = settings?.whatsapp_url || "https://wa.me/";
+  const siteDescription = settings?.site_description || "صحيفة إلكترونية مستقلة تنقل الحقيقة بمهنية وحياد، منحازة لقضايا المواطن العربي.";
+
   return (
     <footer className="bg-footer text-footer-foreground mt-16">
       <div className="h-[3px] w-full" style={{ background: "var(--gradient-gold)" }} />
@@ -11,7 +22,7 @@ const Footer = () => {
           <p className="text-[10px] tracking-[0.35em] uppercase text-accent mb-2">HASAD AL · YOUM</p>
           <h3 className="font-serif-ar text-3xl md:text-4xl mb-3">حصاد اليوم</h3>
           <p className="text-xs md:text-sm text-footer-foreground/70 max-w-xl mx-auto leading-relaxed">
-            صحيفة إلكترونية مستقلة تنقل الحقيقة بمهنية وحياد، منحازة لقضايا المواطن العربي.
+            {siteDescription}
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
@@ -45,19 +56,19 @@ const Footer = () => {
           <div className="col-span-2 md:col-span-1">
             <h4 className="text-[11px] tracking-[0.25em] uppercase text-accent mb-4">تابعنا</h4>
             <div className="flex flex-wrap gap-2">
-              <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
+              <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
                 <FaFacebookF size={13} />
               </a>
-              <a href="https://x.com/hasadalyoum1" target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
+              <a href={twitterUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
                 <FaTwitter size={13} />
               </a>
-              <a href="https://t.me/hasadalyoum" target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
+              <a href={telegramUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
                 <FaTelegram size={13} />
               </a>
-              <a href="https://youtube.com/" target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
+              <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
                 <FaYoutube size={13} />
               </a>
-              <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
                 <FaWhatsapp size={13} />
               </a>
               <a href="/feed" className="w-9 h-9 border border-footer-foreground/20 flex items-center justify-center hover:bg-accent hover:border-accent transition-colors">
