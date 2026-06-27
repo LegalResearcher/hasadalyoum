@@ -13,9 +13,9 @@ const LastUpdate = () => {
   });
 
   return (
-    <div className="bg-card py-2 border-b border-border text-center">
-      <span className="text-dateColor font-medium">آخر تحديث:</span>
-      <span className="text-foreground mr-2">{arabicDate} – {time}</span>
+    <div className="bg-background py-2 border-b border-border text-center">
+      <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">آخر تحديث</span>
+      <span className="text-xs text-foreground mr-2 font-medium">{arabicDate} · {time}</span>
     </div>
   );
 };

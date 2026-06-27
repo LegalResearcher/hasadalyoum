@@ -37,14 +37,11 @@ const NewsSection = ({ title, categorySlug, layout = "grid", limit }: NewsSectio
 
   return (
     <section className="mb-8 md:mb-10">
-      <div className="flex items-center justify-between mb-4 md:mb-6">
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-1 h-6 md:h-8 bg-accent rounded-full" />
-          <h2 className="text-lg md:text-xl font-bold text-foreground">{title}</h2>
-        </div>
+      <div className="flex items-end justify-between mb-5 md:mb-7 border-b-2 border-foreground pb-2">
+        <h2 className="font-serif-ar text-xl md:text-2xl text-foreground tracking-tight">{title}</h2>
         <Link
           to={`/category/${categorySlug}`}
-          className="flex items-center gap-1 text-xs md:text-sm text-muted-foreground hover:text-accent transition-colors"
+          className="flex items-center gap-1 text-[11px] md:text-xs uppercase tracking-[0.18em] text-muted-foreground hover:text-accent transition-colors font-semibold"
         >
           <span>المزيد</span>
           <ChevronLeft size={14} className="md:w-4 md:h-4" />
