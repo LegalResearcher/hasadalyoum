@@ -73,6 +73,8 @@ const Posts = () => {
         return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">مجدول</Badge>;
       case "hidden":
         return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100">مخفي</Badge>;
+      case "under_review":
+        return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">🔍 قيد المراجعة</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
