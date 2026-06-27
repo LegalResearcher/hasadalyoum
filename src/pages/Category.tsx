@@ -37,25 +37,25 @@ const Category = () => {
 
   return (
     <Layout>
-      <nav className="text-xs md:text-sm text-muted-foreground mb-3 md:mb-4">
+      <nav className="text-[11px] md:text-xs uppercase tracking-[0.18em] text-muted-foreground mb-4">
         <Link to="/" className="hover:text-accent">الرئيسية</Link>
-        <span className="mx-1 md:mx-2">/</span>
+        <span className="mx-2">·</span>
         <span className="text-foreground">{category.name}</span>
       </nav>
-      
-      <div className="flex items-center gap-2 md:gap-3 mb-6 md:mb-8">
-        <div className="w-1 h-8 md:h-10 bg-accent rounded-full" />
-        <h1 className="text-xl md:text-2xl font-bold text-foreground">{category.name}</h1>
-      </div>
+
+      <header className="mb-8 md:mb-12 pb-6 border-b-2 border-foreground">
+        <p className="text-[11px] md:text-xs uppercase tracking-[0.22em] text-accent font-bold mb-2">قسم</p>
+        <h1 className="font-serif-ar text-3xl md:text-5xl text-foreground tracking-tight">{category.name}</h1>
+      </header>
       
       {posts && posts.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
           {posts.map((post) => (
             <NewsCard key={post.id} post={post} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-16 md:py-20 bg-card rounded-lg">
+        <div className="text-center py-16 md:py-20 border border-border">
           <p className="text-muted-foreground text-sm md:text-base">لا توجد أخبار في هذا القسم حالياً</p>
         </div>
       )}
