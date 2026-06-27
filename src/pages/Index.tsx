@@ -1,11 +1,45 @@
+import { Helmet } from "react-helmet-async";
 import Layout from "@/components/layout/Layout";
-import TopFeatured from "@/components/news/TopFeatured";
+import HeroSlider from "@/components/news/HeroSlider";
 import NewsSection from "@/components/news/NewsSection";
+import { SITE_NAME, SITE_URL, SITE_LOGO } from "@/lib/seoHelpers";
 
 const Index = () => {
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "NewsMediaOrganization",
+    name: SITE_NAME,
+    url: SITE_URL,
+    logo: { "@type": "ImageObject", url: SITE_LOGO },
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE_NAME,
+    url: SITE_URL,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${SITE_URL}/search?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
+
   return (
     <Layout>
-      <TopFeatured />
+      <Helmet>
+        <title>{`${SITE_NAME} | منبرك الأول لأخبار اليمن والحدث لحظة بلحظة`}</title>
+        <link rel="canonical" href={SITE_URL} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={SITE_NAME} />
+        <meta property="og:url" content={SITE_URL} />
+        <script type="application/ld+json">{JSON.stringify(organizationSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
+      </Helmet>
+
+      <section className="mb-10">
+        <HeroSlider />
+      </section>
 
       <NewsSection title="أخبار محلية" categorySlug="local-news" layout="featured" limit={5} />
       <NewsSection title="أخبار وتقارير" categorySlug="news-reports" layout="featured" limit={5} />
