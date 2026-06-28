@@ -23,6 +23,7 @@ import Settings from "./pages/admin/Settings";
 import Profile from "./pages/admin/Profile";
 import Editors from "./pages/admin/Editors";
 import Ads from "./pages/admin/Ads";
+import Maintenance from "./pages/admin/Maintenance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
           <Route path="/admin/profile" element={<Profile />} />
           <Route path="/admin/editors" element={<Editors />} />
           <Route path="/admin/ads" element={<Ads />} />
+          <Route path="/admin/maintenance" element={<Maintenance />} />
           
           {/* 404 */}
           <Route path="*" element={<NotFound />} />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Save, ArrowRight, Image as ImageIcon, Video, Clock, FileText } from "lucide-react";
+import { Loader2, Save, ArrowRight, Image as ImageIcon, Video, Clock, FileText, AlertTriangle, Sparkles, Eraser, Eye } from "lucide-react";
 import { useCategories } from "@/hooks/useCategories";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +20,24 @@ import { translateError } from "@/lib/errorTranslator";
 import { optimizeImage, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
 import { applyWatermark } from "@/lib/imageWatermark";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+
+const OPENING_PHRASES = [
+  "كشفت مصادر مطلعة أن...",
+  "علمت حصاد اليوم من مصادر خاصة أن...",
+  "أفادت تقارير موثوقة بأن...",
+  "تشير المعطيات المتوفرة إلى أن...",
+  "في سياق متصل، أكدت مصادر أن...",
+];
+
+const DRAFT_KEY = "hasad_draft_new";
+
+// تنسيق فقرات: سطر جديد بعد كل علامة ترقيم نهائية (. ؟ !)
+function formatParagraphs(text: string): string {
+  return text
+    .replace(/([.!؟?])\s+/g, "$1\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
 const PostEditor = () => {
   const { id } = useParams();
@@ -31,6 +49,11 @@ const PostEditor = () => {
   const [enableWatermark, setEnableWatermark] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const isNew = !id || id === "new";
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [splitCount, setSplitCount] = useState(2);
+  const [showSeoPreview, setShowSeoPreview] = useState(false);
+  const lastAutoSaveRef = useRef<number>(0);
+  const draftRestoreCheckedRef = useRef(false);
 
   const { data: categories } = useCategories();
   const { data: authors } = useAuthors();
@@ -44,7 +67,7 @@ const PostEditor = () => {
     additional_images: [] as string[],
     category_id: "",
     author_id: "",
-    status: "draft" as "draft" | "published" | "scheduled" | "hidden",
+    status: "draft" as "draft" | "published" | "scheduled" | "hidden" | "under_review",
     is_featured: false,
     is_breaking: false,
     source_type: "حصاد اليوم | خاص",
@@ -54,6 +77,9 @@ const PostEditor = () => {
     meta_keywords: "",
     scheduled_at: "",
     hide_after: "",
+    badge: "",
+    is_pinned: false,
+    pinned_order: null as number | null,
   });
 
   const { data: post, isLoading: postLoading } = useQuery({
@@ -92,9 +118,49 @@ const PostEditor = () => {
         meta_keywords: post.meta_keywords || "",
         scheduled_at: post.scheduled_at ? post.scheduled_at.slice(0, 16) : "",
         hide_after: post.hide_after ? post.hide_after.slice(0, 16) : "",
+        badge: (post as any).badge || "",
+        is_pinned: (post as any).is_pinned || false,
+        pinned_order: (post as any).pinned_order ?? null,
       });
     }
   }, [post]);
+
+  // عند فتح خبر جديد: حقن عبارة افتتاحية + استعادة المسودة من localStorage
+  useEffect(() => {
+    if (!isNew || draftRestoreCheckedRef.current) return;
+    draftRestoreCheckedRef.current = true;
+    const stored = localStorage.getItem(DRAFT_KEY);
+    if (stored) {
+      toast("وُجدت مسودة محفوظة، هل تريد استعادتها؟", {
+        action: { label: "نعم", onClick: () => { try { setFormData((p) => ({ ...p, ...JSON.parse(stored) })); toast.success("تم استعادة المسودة"); } catch { /* ignore */ } } },
+        cancel: { label: "لا", onClick: () => localStorage.removeItem(DRAFT_KEY) },
+        duration: 10000,
+      });
+    } else {
+      const phrase = OPENING_PHRASES[Math.floor(Math.random() * OPENING_PHRASES.length)];
+      setFormData((p) => ({ ...p, content: phrase + " " }));
+    }
+  }, [isNew]);
+
+  // حفظ المسودة في localStorage عند أي تغيير (خبر جديد فقط)
+  useEffect(() => {
+    if (!isNew) return;
+    if (!formData.title && !formData.content) return;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+  }, [formData, isNew]);
+
+  // فحص تكرار العنوان/الـ slug مع debounce 500ms
+  useEffect(() => {
+    if (!formData.title) { setDuplicateWarning(null); return; }
+    const t = setTimeout(async () => {
+      let q = supabase.from("posts").select("id, title").or(`title.eq.${formData.title},slug.eq.${formData.slug}`).limit(1);
+      if (!isNew && id) q = q.neq("id", id);
+      const { data } = await q;
+      if (data && data.length > 0) setDuplicateWarning("⚠️ يوجد خبر آخر بنفس العنوان أو الرابط");
+      else setDuplicateWarning(null);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [formData.title, formData.slug, isNew, id]);
 
   const generateSlug = (title: string) => {
     return title
@@ -152,6 +218,45 @@ const PostEditor = () => {
     }));
   };
 
+  // عند اللصق في المحتوى: تنسيق فقرات تلقائي
+  const handleContentPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text");
+    const formatted = formatParagraphs(pasted);
+    const ta = e.currentTarget;
+    const before = formData.content.slice(0, ta.selectionStart);
+    const after = formData.content.slice(ta.selectionEnd);
+    handleContentChange(before + formatted + after);
+  };
+
+  // عند الكتابة: أضف \n مباشرة بعد علامة ترقيم (. ؟ !)
+  const handleContentKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ([".", "!", "؟", "?"].includes(e.key)) {
+      const ta = e.currentTarget;
+      const pos = ta.selectionStart;
+      setTimeout(() => {
+        const v = ta.value;
+        if (v[pos - 1] && [".", "!", "؟", "?"].includes(v[pos - 1]) && v[pos] !== "\n") {
+          const updated = v.slice(0, pos) + "\n" + v.slice(pos);
+          handleContentChange(updated);
+          requestAnimationFrame(() => ta.setSelectionRange(pos + 1, pos + 1));
+        }
+      }, 0);
+    }
+  };
+
+  const handleFormatParagraphs = () => {
+    handleContentChange(formatParagraphs(formData.content).replace(/\n/g, "\n\n"));
+    toast.success("تم تنسيق الفقرات");
+  };
+
+  const handleAutoSplitExcerpt = () => {
+    const sentences = formData.content.replace(/<[^>]*>/g, "").split(/(?<=[.!؟?])\s+/).filter(Boolean);
+    const excerpt = sentences.slice(0, splitCount).join(" ").slice(0, 300);
+    setFormData((p) => ({ ...p, excerpt }));
+    toast.success("تم استخراج الملخص");
+  };
+
   const isValidUUID = (str: string | undefined): boolean => {
     if (!str) return false;
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -170,8 +275,16 @@ const PostEditor = () => {
 
       const { additional_images, ...rest } = formData;
 
+      // تعبئة حقول SEO تلقائياً إن كانت فارغة
+      const auto_meta_title = rest.meta_title || rest.title.slice(0, 60);
+      const auto_meta_desc = rest.meta_description || rest.excerpt || rest.content.replace(/<[^>]*>/g, "").slice(0, 160);
+      const auto_meta_kw = rest.meta_keywords || generateKeywords(rest.title, rest.content);
+
       const postData = {
         ...rest,
+        meta_title: auto_meta_title,
+        meta_description: auto_meta_desc,
+        meta_keywords: auto_meta_kw,
         word_count: wordCount,
         reading_time: readingTime,
         published_at: formData.status === "published" ? new Date().toISOString() : null,
@@ -179,6 +292,7 @@ const PostEditor = () => {
         hide_after: formData.hide_after || null,
         category_id: isValidUUID(formData.category_id) ? formData.category_id : null,
         author_id: isValidUUID(formData.author_id) ? formData.author_id : null,
+        pinned_order: formData.is_pinned ? formData.pinned_order : null,
       };
 
       if (isNew) {
@@ -190,16 +304,44 @@ const PostEditor = () => {
         const { error } = await supabase.from("posts").update(postData).eq("id", id);
         if (error) throw error;
       }
+
+      // ping Google عند النشر
+      if (formData.status === "published") {
+        try { fetch(`https://www.google.com/ping?sitemap=https://hasadalyoum.com/sitemap.xml`, { mode: "no-cors" }); } catch { /* ignore */ }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       toast.success(isNew ? "تم إنشاء الخبر بنجاح" : "تم حفظ التغييرات");
+      if (isNew) localStorage.removeItem(DRAFT_KEY);
       navigate("/admin/posts");
     },
     onError: (error: any) => {
       toast.error(translateError(error));
     },
   });
+
+  // حفظ تلقائي كل 30 ثانية للمسودة الجديدة
+  useEffect(() => {
+    if (!isNew) return;
+    const interval = setInterval(async () => {
+      if (formData.status !== "draft" || !formData.title.trim()) return;
+      if (Date.now() - lastAutoSaveRef.current < 25000) return;
+      lastAutoSaveRef.current = Date.now();
+      try {
+        await supabase.from("posts").insert({
+          title: formData.title,
+          slug: formData.slug || `auto-${Date.now()}`,
+          content: formData.content,
+          excerpt: formData.excerpt,
+          status: "draft",
+          user_id: user?.id || null,
+        });
+        toast.success("تم الحفظ التلقائي", { duration: 1500 });
+      } catch { /* silent */ }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isNew, formData, user]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -339,6 +481,11 @@ const PostEditor = () => {
                     onChange={(e) => handleTitleChange(e.target.value)}
                     placeholder="عنوان الخبر"
                   />
+                  {duplicateWarning && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 flex items-center gap-2">
+                      <AlertTriangle className="h-3 w-3" /> {duplicateWarning}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -352,7 +499,21 @@ const PostEditor = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>المقتطف</Label>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <Label>المقتطف</Label>
+                    <div className="flex items-center gap-2">
+                      <Select value={String(splitCount)} onValueChange={(v) => setSplitCount(+v)}>
+                        <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+                        <SelectContent>{[1,2,3,4,5].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Button type="button" size="sm" variant="outline" onClick={handleAutoSplitExcerpt}>
+                        <Sparkles className="h-3 w-3 ml-1" /> تقسيم تلقائي
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setFormData(p => ({ ...p, excerpt: "" }))}>
+                        <Eraser className="h-3 w-3 ml-1" /> مسح
+                      </Button>
+                    </div>
+                  </div>
                   <Textarea
                     value={formData.excerpt}
                     onChange={(e) => setFormData((prev) => ({ ...prev, excerpt: e.target.value }))}
@@ -362,10 +523,17 @@ const PostEditor = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>المحتوى</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>المحتوى</Label>
+                    <Button type="button" size="sm" variant="outline" onClick={handleFormatParagraphs}>
+                      <Sparkles className="h-3 w-3 ml-1" /> تنسيق فقرات
+                    </Button>
+                  </div>
                   <Textarea
                     value={formData.content}
                     onChange={(e) => handleContentChange(e.target.value)}
+                    onPaste={handleContentPaste}
+                    onKeyDown={handleContentKeyDown}
                     placeholder="محتوى الخبر..."
                     rows={15}
                     className="min-h-[300px]"
@@ -461,9 +629,27 @@ const PostEditor = () => {
             {/* SEO */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">SEO</CardTitle>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span>SEO</span>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setShowSeoPreview(s => !s)}>
+                    <Eye className="h-4 w-4 ml-1" /> معاينة Google
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {showSeoPreview && (
+                  <div className="border rounded-lg p-4 bg-white font-[Arial]" dir="ltr">
+                    <div className="text-[#1a0dab] text-lg leading-tight hover:underline cursor-pointer truncate">
+                      {formData.meta_title || formData.title || "Title"}
+                    </div>
+                    <div className="text-[#006621] text-sm">
+                      https://hasadalyoum.com/article/{formData.slug || "..."}
+                    </div>
+                    <div className="text-[#545454] text-sm mt-1 line-clamp-2">
+                      {formData.meta_description || formData.excerpt || "Description..."}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>عنوان الصفحة (Meta Title)</Label>
                   <Input
@@ -566,6 +752,35 @@ const PostEditor = () => {
                     onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_breaking: checked }))}
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>وسم الخبر (Badge)</Label>
+                  <Input
+                    value={formData.badge}
+                    onChange={(e) => setFormData((p) => ({ ...p, badge: e.target.value }))}
+                    placeholder="مثال: حصري، عاجل، تقرير..."
+                    maxLength={30}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label>تثبيت في الأكثر قراءة</Label>
+                  <Switch
+                    checked={formData.is_pinned}
+                    onCheckedChange={(checked) => setFormData((p) => ({ ...p, is_pinned: checked, pinned_order: checked ? (p.pinned_order || 1) : null }))}
+                  />
+                </div>
+                {formData.is_pinned && (
+                  <div className="space-y-2">
+                    <Label>ترتيب التثبيت</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={formData.pinned_order ?? 1}
+                      onChange={(e) => setFormData((p) => ({ ...p, pinned_order: +e.target.value || 1 }))}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 

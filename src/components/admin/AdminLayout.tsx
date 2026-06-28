@@ -17,7 +17,8 @@ import {
   X,
   UserCog,
   User,
-  Megaphone
+  Megaphone,
+  Wrench
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const baseMenuItems = [
 const adminOnlyItems = [
   { path: "/admin/editors", label: "إدارة المحررين", icon: UserCog },
   { path: "/admin/ads", label: "الإعلانات", icon: Megaphone },
+  { path: "/admin/maintenance", label: "الصيانة والأرشفة", icon: Wrench },
   { path: "/admin/settings", label: "الإعدادات", icon: Settings },
 ];
 

@@ -181,7 +181,7 @@ export type Database = {
           {
             foreignKeyName: "category_settings_category_id_fkey"
             columns: ["category_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "categories"
             referencedColumns: ["id"]
           },
@@ -433,6 +433,7 @@ export type Database = {
           meta_description: string | null
           meta_keywords: string | null
           meta_title: string | null
+          pinned_order: number | null
           published_at: string | null
           reading_time: number | null
           scheduled_at: string | null
@@ -462,6 +463,7 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
+          pinned_order?: number | null
           published_at?: string | null
           reading_time?: number | null
           scheduled_at?: string | null
@@ -491,6 +493,7 @@ export type Database = {
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
+          pinned_order?: number | null
           published_at?: string | null
           reading_time?: number | null
           scheduled_at?: string | null
@@ -648,6 +651,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_slug: { Args: { title: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -656,12 +660,18 @@ export type Database = {
         Returns: boolean
       }
       increment_views: { Args: { post_id: string }; Returns: undefined }
+      is_admin: { Args: never; Returns: boolean }
       is_admin_or_editor: { Args: { _user_id: string }; Returns: boolean }
       is_editor: { Args: { _user_id?: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "editor" | "author"
-      post_status: "draft" | "scheduled" | "published" | "hidden" | "under_review"
+      post_status:
+        | "draft"
+        | "scheduled"
+        | "published"
+        | "hidden"
+        | "under_review"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -790,7 +800,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "editor", "author"],
-      post_status: ["draft", "scheduled", "published", "hidden", "under_review"],
+      post_status: [
+        "draft",
+        "scheduled",
+        "published",
+        "hidden",
+        "under_review",
+      ],
     },
   },
 } as const
