@@ -481,6 +481,11 @@ const PostEditor = () => {
                     onChange={(e) => handleTitleChange(e.target.value)}
                     placeholder="عنوان الخبر"
                   />
+                  {duplicateWarning && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 flex items-center gap-2">
+                      <AlertTriangle className="h-3 w-3" /> {duplicateWarning}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -494,7 +499,21 @@ const PostEditor = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>المقتطف</Label>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <Label>المقتطف</Label>
+                    <div className="flex items-center gap-2">
+                      <Select value={String(splitCount)} onValueChange={(v) => setSplitCount(+v)}>
+                        <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
+                        <SelectContent>{[1,2,3,4,5].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <Button type="button" size="sm" variant="outline" onClick={handleAutoSplitExcerpt}>
+                        <Sparkles className="h-3 w-3 ml-1" /> تقسيم تلقائي
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setFormData(p => ({ ...p, excerpt: "" }))}>
+                        <Eraser className="h-3 w-3 ml-1" /> مسح
+                      </Button>
+                    </div>
+                  </div>
                   <Textarea
                     value={formData.excerpt}
                     onChange={(e) => setFormData((prev) => ({ ...prev, excerpt: e.target.value }))}
@@ -504,10 +523,17 @@ const PostEditor = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>المحتوى</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>المحتوى</Label>
+                    <Button type="button" size="sm" variant="outline" onClick={handleFormatParagraphs}>
+                      <Sparkles className="h-3 w-3 ml-1" /> تنسيق فقرات
+                    </Button>
+                  </div>
                   <Textarea
                     value={formData.content}
                     onChange={(e) => handleContentChange(e.target.value)}
+                    onPaste={handleContentPaste}
+                    onKeyDown={handleContentKeyDown}
                     placeholder="محتوى الخبر..."
                     rows={15}
                     className="min-h-[300px]"
