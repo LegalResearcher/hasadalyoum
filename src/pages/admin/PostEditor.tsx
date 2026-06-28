@@ -629,9 +629,27 @@ const PostEditor = () => {
             {/* SEO */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">SEO</CardTitle>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <span>SEO</span>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setShowSeoPreview(s => !s)}>
+                    <Eye className="h-4 w-4 ml-1" /> معاينة Google
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {showSeoPreview && (
+                  <div className="border rounded-lg p-4 bg-white font-[Arial]" dir="ltr">
+                    <div className="text-[#1a0dab] text-lg leading-tight hover:underline cursor-pointer truncate">
+                      {formData.meta_title || formData.title || "Title"}
+                    </div>
+                    <div className="text-[#006621] text-sm">
+                      https://hasadalyoum.com/article/{formData.slug || "..."}
+                    </div>
+                    <div className="text-[#545454] text-sm mt-1 line-clamp-2">
+                      {formData.meta_description || formData.excerpt || "Description..."}
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label>عنوان الصفحة (Meta Title)</Label>
                   <Input
