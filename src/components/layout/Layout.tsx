@@ -5,6 +5,7 @@ import Navigation from "./Navigation";
 import BreakingNews from "./BreakingNews";
 import LastUpdate from "./LastUpdate";
 import Footer from "./Footer";
+import { PWAInstallToast } from "@/components/PWAInstallPrompt";
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,6 +23,7 @@ const Layout = ({ children }: LayoutProps) => {
         <div className="container">{children}</div>
       </main>
       <Footer />
+      <PWAInstallToast />
     </div>
   );
 };
