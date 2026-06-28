@@ -734,6 +734,35 @@ const PostEditor = () => {
                     onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_breaking: checked }))}
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>وسم الخبر (Badge)</Label>
+                  <Input
+                    value={formData.badge}
+                    onChange={(e) => setFormData((p) => ({ ...p, badge: e.target.value }))}
+                    placeholder="مثال: حصري، عاجل، تقرير..."
+                    maxLength={30}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label>تثبيت في الأكثر قراءة</Label>
+                  <Switch
+                    checked={formData.is_pinned}
+                    onCheckedChange={(checked) => setFormData((p) => ({ ...p, is_pinned: checked, pinned_order: checked ? (p.pinned_order || 1) : null }))}
+                  />
+                </div>
+                {formData.is_pinned && (
+                  <div className="space-y-2">
+                    <Label>ترتيب التثبيت</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={formData.pinned_order ?? 1}
+                      onChange={(e) => setFormData((p) => ({ ...p, pinned_order: +e.target.value || 1 }))}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
