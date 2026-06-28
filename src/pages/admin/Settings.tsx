@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Save, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { translateError } from "@/lib/errorTranslator";
 
 const Settings = () => {
   const queryClient = useQueryClient();
@@ -21,7 +22,9 @@ const Settings = () => {
     telegram_url: "https://t.me/hasadalyoum",
     youtube_url: "https://youtube.com/",
     whatsapp_url: "",
+    watermark_logo_url: "",
   });
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const { data: siteSettings, isLoading } = useQuery({
     queryKey: ["site-settings"],
@@ -57,13 +60,33 @@ const Settings = () => {
       queryClient.invalidateQueries({ queryKey: ["site-settings"] });
       toast.success("تم حفظ الإعدادات");
     },
-    onError: () => {
-      toast.error("حدث خطأ أثناء الحفظ");
+    onError: (error: any) => {
+      toast.error(translateError(error));
     },
   });
 
   const handleChange = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingLogo(true);
+    try {
+      const fileName = `watermark-logo-${Date.now()}.${file.name.split(".").pop()}`;
+      const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, file);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
+      handleChange("watermark_logo_url", urlData.publicUrl);
+      toast.success("تم رفع الشعار، لا تنسَ الضغط على (حفظ الإعدادات)");
+    } catch (error: any) {
+      toast.error(translateError(error));
+    } finally {
+      setIsUploadingLogo(false);
+    }
   };
 
   return (
@@ -173,6 +196,28 @@ const Settings = () => {
                   dir="ltr"
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Watermark Logo */}
+          <Card>
+            <CardHeader>
+              <CardTitle>شعار العلامة المائية</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                ارفع نسخة شفافة (PNG) من شعار الموقع لاستخدامها كعلامة مائية اختيارية على صور الأخبار عند المشاركة.
+                إن لم تُرفع، ستبقى خانة "العلامة المائية" غير ظاهرة في محرر الأخبار.
+              </p>
+              {settings.watermark_logo_url && (
+                <img
+                  src={settings.watermark_logo_url}
+                  alt="شعار العلامة المائية"
+                  className="h-20 object-contain bg-muted rounded-lg p-2"
+                />
+              )}
+              <Input type="file" accept="image/png,image/webp" onChange={handleLogoUpload} disabled={isUploadingLogo} />
+              {isUploadingLogo && <p className="text-xs text-muted-foreground">جاري الرفع...</p>}
             </CardContent>
           </Card>
         </div>
