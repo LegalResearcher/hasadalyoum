@@ -58,7 +58,7 @@ const Index = () => {
       <NewsSection title="آراء واتجاهات" categorySlug="opinions" layout="opinions" limit={4} />
       <NewsSection title="علوم وتكنولوجيا" categorySlug="technology" layout="grid" limit={2} />
       <NewsSection title="رياضة" categorySlug="sports" layout="grid" limit={3} />
-      <NewsSection title="فيديو حصاد اليوم" categorySlug="video" layout="grid" limit={3} />
+      <NewsSection title="فيديو حصاد اليوم" categorySlug="videos" layout="grid" limit={3} />
     </Layout>
   );
 };
