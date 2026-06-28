@@ -4,6 +4,7 @@ import { Search, Menu, X } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { useMenuCategories } from "@/hooks/useCategories";
+import { PWAInstallButton } from "@/components/PWAInstallPrompt";
 
 const fixedNavItems = [
   { label: "الرئيسية", href: "/" },
@@ -40,6 +41,7 @@ const Navigation = () => {
               <span className="text-[11px] md:text-xs tracking-[0.2em] uppercase">Video</span>
               <FaYoutube size={14} className="text-breaking" />
             </Link>
+            <PWAInstallButton />
           </div>
 
           {/* Mobile menu button */}
