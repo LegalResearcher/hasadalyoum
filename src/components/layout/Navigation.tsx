@@ -3,22 +3,23 @@ import { Link, useLocation } from "react-router-dom";
 import { Search, Menu, X } from "lucide-react";
 import { FaYoutube } from "react-icons/fa";
 import { cn } from "@/lib/utils";
+import { useMenuCategories } from "@/hooks/useCategories";
 
-const navItems = [
+const fixedNavItems = [
   { label: "الرئيسية", href: "/" },
   { label: "الأكثر قراءة", href: "/most-read" },
-  { label: "أخبار محلية", href: "/category/local-news" },
-  { label: "أخبار وتقارير", href: "/category/news-reports" },
-  { label: "اليمن في الصحافة", href: "/category/yemen-press" },
-  { label: "شؤون دولية", href: "/category/international" },
-  { label: "آراء واتجاهات", href: "/category/opinions" },
-  { label: "علوم وتكنولوجيا", href: "/category/technology" },
-  { label: "رياضة", href: "/category/sports" },
 ];
 
 const Navigation = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { data: menuCategories } = useMenuCategories();
+
+  // قائمة الأقسام تُبنى من قاعدة البيانات (يتحكم بها الأدمن من لوحة التحكم → الأقسام)
+  const navItems = [
+    ...fixedNavItems,
+    ...(menuCategories || []).map((cat) => ({ label: cat.name, href: `/category/${cat.slug}` })),
+  ];
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
