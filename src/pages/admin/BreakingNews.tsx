@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { translateError } from "@/lib/errorTranslator";
 import {
   Dialog,
   DialogContent,
@@ -78,8 +79,8 @@ const BreakingNewsAdmin = () => {
       setDialogOpen(false);
       setFormData(defaultForm);
     },
-    onError: () => {
-      toast.error("حدث خطأ أثناء الحفظ");
+    onError: (error: any) => {
+      toast.error(translateError(error));
     },
   });
 
@@ -94,8 +95,8 @@ const BreakingNewsAdmin = () => {
       toast.success("تم الحذف");
       setDeleteId(null);
     },
-    onError: () => {
-      toast.error("حدث خطأ أثناء الحذف");
+    onError: (error: any) => {
+      toast.error(translateError(error));
     },
   });
 
