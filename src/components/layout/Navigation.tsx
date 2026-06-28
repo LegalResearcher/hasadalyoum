@@ -34,7 +34,7 @@ const Navigation = () => {
               <Search size={16} />
             </button>
             <Link
-              to="/category/video"
+              to="/category/videos"
               className="flex items-center gap-2 px-2 md:px-3 py-2 text-nav-foreground/90 hover:text-accent transition-colors"
             >
               <span className="text-[11px] md:text-xs tracking-[0.2em] uppercase">Video</span>
