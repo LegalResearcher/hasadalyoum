@@ -33,6 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Plus, Pencil, Trash2, ArrowRight, LogOut, Users, User } from "lucide-react";
+import { translateError } from "@/lib/errorTranslator";
 
 interface EditorForm {
   email: string;
@@ -151,7 +152,7 @@ const Editors = () => {
     onError: (error: any) => {
       toast({
         title: "خطأ",
-        description: error.message || "فشل في إنشاء المستخدم",
+        description: translateError(error),
         variant: "destructive",
       });
     },
@@ -179,8 +180,8 @@ const Editors = () => {
       setEditingUser(null);
       toast({ title: "تم التحديث", description: "تم تحديث بيانات المستخدم بنجاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في تحديث البيانات", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ title: "خطأ", description: translateError(error), variant: "destructive" });
     },
   });
 
@@ -198,8 +199,8 @@ const Editors = () => {
       setDeleteId(null);
       toast({ title: "تم الحذف", description: "تم حذف صلاحيات المستخدم بنجاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "فشل في حذف المستخدم", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ title: "خطأ", description: translateError(error), variant: "destructive" });
     },
   });
 
