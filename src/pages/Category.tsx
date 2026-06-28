@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Layout from "@/components/layout/Layout";
-import { useCategoryBySlug } from "@/hooks/useCategories";
+import { useCategoryBySlug, useCategorySettingsBySlug } from "@/hooks/useCategories";
 import { usePosts } from "@/hooks/usePosts";
 import NewsCard from "@/components/news/NewsCard";
 import { SITE_NAME, SITE_URL } from "@/lib/seoHelpers";
@@ -9,7 +9,10 @@ import { SITE_NAME, SITE_URL } from "@/lib/seoHelpers";
 const Category = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: category, isLoading: categoryLoading } = useCategoryBySlug(slug || "");
-  const { data: posts, isLoading: postsLoading } = usePosts({ categorySlug: slug });
+  const { data: categorySettings } = useCategorySettingsBySlug(slug || "");
+  const postsLimit = categorySettings?.posts_per_page || 24;
+  const displayStyle = categorySettings?.display_style || "grid";
+  const { data: posts, isLoading: postsLoading } = usePosts({ categorySlug: slug, limit: postsLimit });
 
   if (categoryLoading || postsLoading) {
     return (
@@ -61,11 +64,19 @@ const Category = () => {
       </div>
       
       {posts && posts.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {posts.map((post) => (
-            <NewsCard key={post.id} post={post} />
-          ))}
-        </div>
+        displayStyle === "list" ? (
+          <div className="flex flex-col gap-4 md:gap-5">
+            {posts.map((post) => (
+              <NewsCard key={post.id} post={post} variant="horizontal" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {posts.map((post) => (
+              <NewsCard key={post.id} post={post} />
+            ))}
+          </div>
+        )
       ) : (
         <div className="text-center py-16 md:py-20 bg-card rounded-lg">
           <p className="text-muted-foreground text-sm md:text-base">لا توجد أخبار في هذا القسم حالياً</p>
