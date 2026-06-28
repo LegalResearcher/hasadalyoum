@@ -13,6 +13,7 @@ import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAllCategorySettings, useUpdateCategorySettings } from "@/hooks/useCategories";
+import { translateError } from "@/lib/errorTranslator";
 import {
   Dialog,
   DialogContent,
@@ -115,8 +116,8 @@ const Categories = () => {
       setDialogOpen(false);
       setFormData(defaultForm);
     },
-    onError: () => {
-      toast.error("حدث خطأ أثناء الحفظ");
+    onError: (error: any) => {
+      toast.error(translateError(error));
     },
   });
 
@@ -130,8 +131,8 @@ const Categories = () => {
       toast.success("تم حذف القسم");
       setDeleteId(null);
     },
-    onError: () => {
-      toast.error("حدث خطأ أثناء الحذف");
+    onError: (error: any) => {
+      toast.error(translateError(error));
     },
   });
 
