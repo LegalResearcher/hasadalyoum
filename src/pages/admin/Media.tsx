@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Trash2, Loader2, Copy, Check, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { translateError } from "@/lib/errorTranslator";
 import { useAuth } from "@/hooks/useAuth";
 import {
   AlertDialog,
@@ -52,8 +53,8 @@ const Media = () => {
       toast.success("تم حذف الملف");
       setDeleteId(null);
     },
-    onError: () => {
-      toast.error("حدث خطأ أثناء الحذف");
+    onError: (error: any) => {
+      toast.error(translateError(error));
     },
   });
 
