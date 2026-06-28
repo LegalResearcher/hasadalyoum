@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Eye, Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { translateError } from "@/lib/errorTranslator";
 import { Link } from "react-router-dom";
 import {
   AlertDialog,
@@ -58,8 +59,8 @@ const Posts = () => {
       toast.success("تم حذف الخبر بنجاح");
       setDeleteId(null);
     },
-    onError: () => {
-      toast.error("حدث خطأ أثناء الحذف");
+    onError: (error: any) => {
+      toast.error(translateError(error));
     },
   });
 
