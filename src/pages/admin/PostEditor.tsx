@@ -16,12 +16,20 @@ import { Loader2, Save, ArrowRight, Image as ImageIcon, Video, Clock, FileText }
 import { useCategories } from "@/hooks/useCategories";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useAuth } from "@/hooks/useAuth";
+import { translateError } from "@/lib/errorTranslator";
+import { optimizeImage, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
+import { applyWatermark } from "@/lib/imageWatermark";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const PostEditor = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, userRole } = useAuth();
+  const { data: siteSettings } = useSiteSettings();
+  const watermarkLogoUrl = siteSettings?.watermark_logo_url;
+  const [enableWatermark, setEnableWatermark] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const isNew = !id || id === "new";
 
   const { data: categories } = useCategories();
@@ -189,7 +197,7 @@ const PostEditor = () => {
       navigate("/admin/posts");
     },
     onError: (error: any) => {
-      toast.error(error.message || "حدث خطأ أثناء الحفظ");
+      toast.error(translateError(error));
     },
   });
 
@@ -197,24 +205,55 @@ const PostEditor = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${fileExt}`;
+    setIsUploadingImage(true);
+    try {
+      let fileToUpload: Blob = file;
+      let fileName: string;
+      let contentType = file.type;
 
-    const { error: uploadError } = await supabase.storage
-      .from("post-images")
-      .upload(fileName, file);
+      // تحسين الصورة (تصغير + تحويل WebP + ضغط) قبل الرفع
+      if (isOptimizableImage(file)) {
+        toast.info(`جاري تحسين الصورة... (${formatFileSize(file.size)})`);
+        const optimized = await optimizeImage(file);
+        fileToUpload = optimized.blob;
+        contentType = "image/webp";
+        fileName = `${Date.now()}.webp`;
+        toast.success(`تم ضغط الصورة: ${formatFileSize(optimized.originalSize)} ← ${formatFileSize(optimized.optimizedSize)}`);
+      } else {
+        const fileExt = file.name.split(".").pop();
+        fileName = `${Date.now()}.${fileExt}`;
+      }
 
-    if (uploadError) {
-      toast.error("حدث خطأ أثناء رفع الصورة");
-      return;
+      // العلامة المائية (اختياري، فقط إن فعّلها الأدمن وكان شعار العلامة مُعرَّفاً في الإعدادات)
+      if (enableWatermark && watermarkLogoUrl) {
+        try {
+          toast.info("جاري إضافة العلامة المائية...");
+          const watermarked = await applyWatermark(fileToUpload, watermarkLogoUrl);
+          fileToUpload = watermarked.blob;
+          fileName = `wm-${Date.now()}.webp`;
+          contentType = "image/webp";
+        } catch (wmError) {
+          console.error("Watermark failed:", wmError);
+          toast.error("فشلت إضافة العلامة المائية، سيتم رفع الصورة بدونها");
+        }
+      }
+
+      const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, fileToUpload, { contentType });
+
+      if (uploadError) {
+        toast.error(translateError(uploadError));
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
+
+      setFormData((prev) => ({ ...prev, featured_image: urlData.publicUrl }));
+      toast.success("تم رفع الصورة بنجاح");
+    } catch (error: any) {
+      toast.error(translateError(error));
+    } finally {
+      setIsUploadingImage(false);
     }
-
-    const { data: urlData } = supabase.storage
-      .from("post-images")
-      .getPublicUrl(fileName);
-
-    setFormData((prev) => ({ ...prev, featured_image: urlData.publicUrl }));
-    toast.success("تم رفع الصورة بنجاح");
   };
 
   const handleAdditionalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -363,7 +402,14 @@ const PostEditor = () => {
                       className="w-full h-48 object-cover rounded-lg"
                     />
                   )}
-                  <Input type="file" accept="image/*" onChange={handleImageUpload} />
+                  <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} />
+                  {isUploadingImage && <p className="text-xs text-muted-foreground">جاري المعالجة والرفع...</p>}
+                  {watermarkLogoUrl && (
+                    <div className="flex items-center justify-between border rounded-lg p-2">
+                      <Label className="text-sm">إضافة العلامة المائية (شعار الموقع) على الصورة</Label>
+                      <Switch checked={enableWatermark} onCheckedChange={setEnableWatermark} />
+                    </div>
+                  )}
                   <Input
                     value={formData.featured_image}
                     onChange={(e) => setFormData((prev) => ({ ...prev, featured_image: e.target.value }))}
