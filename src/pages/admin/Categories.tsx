@@ -8,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAllCategorySettings, useUpdateCategorySettings } from "@/hooks/useCategories";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +38,9 @@ interface CategoryForm {
   display_order: number;
   posts_count: number;
   is_active: boolean;
+  show_in_menu: boolean;
+  display_style: "grid" | "list";
+  posts_per_page: number;
 }
 
 const defaultForm: CategoryForm = {
@@ -45,6 +50,9 @@ const defaultForm: CategoryForm = {
   display_order: 0,
   posts_count: 5,
   is_active: true,
+  show_in_menu: true,
+  display_style: "grid",
+  posts_per_page: 12,
 };
 
 const Categories = () => {
@@ -52,6 +60,8 @@ const Categories = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CategoryForm>(defaultForm);
+  const { data: allSettings } = useAllCategorySettings();
+  const updateSettingsMutation = useUpdateCategorySettings();
 
   const { data: categories, isLoading } = useQuery({
     queryKey: ["admin-categories"],
@@ -67,19 +77,40 @@ const Categories = () => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: CategoryForm) => {
-      if (data.id) {
+      const { show_in_menu, display_style, posts_per_page, ...categoryData } = data;
+
+      let categoryId = data.id;
+
+      if (categoryId) {
         const { error } = await supabase
           .from("categories")
-          .update(data)
-          .eq("id", data.id);
+          .update(categoryData)
+          .eq("id", categoryId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("categories").insert(data);
+        const { data: inserted, error } = await supabase
+          .from("categories")
+          .insert(categoryData)
+          .select("id")
+          .single();
         if (error) throw error;
+        categoryId = inserted.id;
       }
+
+      // إعدادات العرض (الظهور في القائمة + نمط العرض + عدد المنشورات بالصفحة)
+      // مفصولة في جدول category_settings المستقل
+      const { error: settingsError } = await supabase
+        .from("category_settings")
+        .upsert(
+          { category_id: categoryId, show_in_menu, display_style, posts_per_page, display_order: categoryData.display_order },
+          { onConflict: "category_id" }
+        );
+      if (settingsError) throw settingsError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["all-category-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["menu-categories"] });
       toast.success(formData.id ? "تم تحديث القسم" : "تم إضافة القسم");
       setDialogOpen(false);
       setFormData(defaultForm);
@@ -105,7 +136,13 @@ const Categories = () => {
   });
 
   const handleEdit = (category: any) => {
-    setFormData(category);
+    const settings = allSettings?.find((s) => s.category_id === category.id);
+    setFormData({
+      ...category,
+      show_in_menu: settings?.show_in_menu ?? true,
+      display_style: settings?.display_style ?? "grid",
+      posts_per_page: settings?.posts_per_page ?? 12,
+    });
     setDialogOpen(true);
   };
 
@@ -151,6 +188,7 @@ const Categories = () => {
                     <TableHead className="text-right">الاسم</TableHead>
                     <TableHead className="text-right">الرابط</TableHead>
                     <TableHead className="text-right">عدد الأخبار</TableHead>
+                    <TableHead className="text-right">في القائمة؟</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">الإجراءات</TableHead>
                   </TableRow>
@@ -162,6 +200,13 @@ const Categories = () => {
                       <TableCell className="font-medium">{cat.name}</TableCell>
                       <TableCell dir="ltr">{cat.slug}</TableCell>
                       <TableCell>{cat.posts_count}</TableCell>
+                      <TableCell>
+                        {(allSettings?.find((s) => s.category_id === cat.id)?.show_in_menu ?? true) ? (
+                          <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">✓ ظاهر</span>
+                        ) : (
+                          <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">مخفي</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded text-xs ${
                           cat.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
@@ -251,6 +296,44 @@ const Categories = () => {
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
                 />
+              </div>
+
+              <div className="border-t pt-4 space-y-4">
+                <p className="text-sm font-semibold text-muted-foreground">إعدادات العرض (صفحة القسم العامة)</p>
+
+                <div className="flex items-center justify-between">
+                  <Label>ظاهر في قائمة التنقل</Label>
+                  <Switch
+                    checked={formData.show_in_menu}
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, show_in_menu: checked }))}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>نمط العرض</Label>
+                    <Select
+                      value={formData.display_style}
+                      onValueChange={(v: "grid" | "list") => setFormData((prev) => ({ ...prev, display_style: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="grid">شبكي (Grid)</SelectItem>
+                        <SelectItem value="list">قائمة (List)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>عدد المنشورات بالصفحة</Label>
+                    <Input
+                      type="number"
+                      value={formData.posts_per_page}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, posts_per_page: parseInt(e.target.value) || 12 }))}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2">
