@@ -33,8 +33,16 @@ const JsonNewsImporter = () => {
         failed++;
         continue;
       }
+      const slug =
+        title
+          .replace(/[^\u0600-\u06FF\w\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 100) || `post-${Date.now()}`;
       const { error } = await supabase.from("posts").insert({
         title,
+        slug: `${slug}-${Date.now().toString(36)}`,
         content,
         excerpt: content.slice(0, 200),
         status: "draft",
