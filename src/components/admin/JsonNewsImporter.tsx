@@ -1,4 +1,5 @@
 import { useState, useRef, ChangeEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -112,6 +113,26 @@ const JsonNewsImporter = () => {
 
   const { data: categories = [] } = useCategories();
   const { data: authors = [] } = useAuthors();
+  const queryClient = useQueryClient();
+
+  // ─── إرسال الروابط لـ Google Indexing API ────────────────────────────────
+  const sendUrlsToGoogleIndexing = async (
+    urls: string[]
+  ): Promise<{ sent: number; failed: number }> => {
+    let sent = 0;
+    let failed = 0;
+    for (let i = 0; i < urls.length; i += 10) {
+      const batch = urls.slice(i, i + 10);
+      try {
+        const { error } = await supabase.functions.invoke("google-indexing", {
+          body: { urls: batch, type: "URL_UPDATED" },
+        });
+        if (error) { failed += batch.length; }
+        else { sent += batch.length; }
+      } catch { failed += batch.length; }
+    }
+    return { sent, failed };
+  };
 
   // الفئة الافتراضية: أول فئة متاحة أو ""
   const defaultCategoryId = categories[0]?.id ?? "";
@@ -281,7 +302,7 @@ const JsonNewsImporter = () => {
   };
 
   // ─── نشر خبر واحد ─────────────────────────────────────────────────────────
-  const publishOne = async (post: ImportedPost, index: number): Promise<{ id: string; slug: string } | null> => {
+  const publishOne = async (post: ImportedPost, index: number): Promise<{ id: string; publishedUrl: string | null } | null> => {
     try {
       const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length;
       const readingTime = Math.ceil(wordCount / 200);
@@ -361,10 +382,15 @@ const JsonNewsImporter = () => {
         views_count: 0,
         is_featured: post.is_featured || false,
         is_pinned: post.is_pinned || false,
-      }).select("id, slug").single();
+      }).select("id, slug, status, created_at").single();
 
       if (error) throw error;
-      return { id: inserted.id, slug: inserted.slug };
+
+      // إرجاع URL فقط إذا كان الخبر منشوراً فعلاً
+      if (inserted?.status === "published") {
+        return { id: inserted.id, publishedUrl: `https://hasadalyoum.com/article/${inserted.slug}` };
+      }
+      return { id: inserted?.id, publishedUrl: null };
     } catch (err: any) {
       console.error(err);
       toast.error(`فشل نشر "${post.title.slice(0, 30)}": ${err.message || ""}`);
@@ -421,8 +447,8 @@ const JsonNewsImporter = () => {
       const res = await publishOne(posts[i], i);
       if (res) {
         success++;
-        publishedIds.push(res.id);
-        publishedUrls.push(`https://hasadalyoum.com/article/${res.slug}`);
+        if (res.id) publishedIds.push(res.id);
+        if (res.publishedUrl) publishedUrls.push(res.publishedUrl);
       } else {
         remaining.push(posts[i]);
       }
@@ -434,24 +460,47 @@ const JsonNewsImporter = () => {
     setResult(resultData);
     toast.success(`تم نشر ${success} من ${posts.length} خبر`);
 
+    // إضافة الأخبار المنشورة للكاش مباشرة بدون مسحه
+    if (success > 0 && publishedIds.length > 0) {
+      try {
+        const { data } = await supabase
+          .from("posts")
+          .select("*")
+          .in("id", publishedIds);
+        if (data) {
+          queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
+          queryClient.invalidateQueries({ queryKey: ["posts"] });
+        }
+      } catch { /* silent */ }
+    }
+
     // تحسين المشاهدات تلقائياً
     if (autoSeedViews && publishedIds.length > 0) {
       await seedViewsForPosts(publishedIds);
     }
 
-    // فهرسة Google
+    // فهرسة Google عبر Indexing API
     if (publishedUrls.length > 0) {
       if (withIndexing) {
+        // "نشر + فهرسة فورية" — مع ping وإشعار للمستخدم
         try {
           await fetch("/api/ping-sitemap", { method: "GET" }).catch(() => {});
           await fetch(
             `https://www.google.com/ping?sitemap=${encodeURIComponent("https://hasadalyoum.com/sitemap.xml")}`,
             { mode: "no-cors" }
           );
-          toast.success(`تم إرسال ${publishedUrls.length} رابط لـ Google فهرسة فورية`);
         } catch { /* silent */ }
+        const { sent, failed } = await sendUrlsToGoogleIndexing(publishedUrls);
+        if (sent > 0) {
+          toast.success(`تم إرسال ${sent} رابط لـ Google Indexing API${failed ? ` (فشل ${failed})` : ""}`);
+        } else {
+          toast.error("فشل إرسال الروابط لـ Google Indexing API");
+        }
       } else {
-        fetch("/api/ping-sitemap", { method: "GET" }).catch(() => {});
+        // "نشر الكل" — فهرسة صامتة في الخلفية
+        sendUrlsToGoogleIndexing(publishedUrls).catch((err) =>
+          console.error("[Auto-Index] Silent indexing failed:", err)
+        );
       }
     }
 
