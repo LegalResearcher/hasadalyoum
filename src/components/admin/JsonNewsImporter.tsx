@@ -106,6 +106,7 @@ const JsonNewsImporter = () => {
   const [showRawBox, setShowRawBox] = useState(false);
   const [rawText, setRawText] = useState("");
   const [autoArchive, setAutoArchive] = useState(false);
+  const [autoSeedViews, setAutoSeedViews] = useState(true);
   const [result, setResult] = useState<{ success: number; failed: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -280,7 +281,7 @@ const JsonNewsImporter = () => {
   };
 
   // ─── نشر خبر واحد ─────────────────────────────────────────────────────────
-  const publishOne = async (post: ImportedPost, index: number): Promise<boolean> => {
+  const publishOne = async (post: ImportedPost, index: number): Promise<{ id: string; slug: string } | null> => {
     try {
       const wordCount = post.content.trim().split(/\s+/).filter(Boolean).length;
       const readingTime = Math.ceil(wordCount / 200);
@@ -337,7 +338,7 @@ const JsonNewsImporter = () => {
 
       const slug = post.slug || buildSlug(post.title);
 
-      const { error } = await supabase.from("posts").insert({
+      const { data: inserted, error } = await supabase.from("posts").insert({
         title: post.title,
         content: post.content,
         excerpt: post.excerpt || null,
@@ -360,37 +361,38 @@ const JsonNewsImporter = () => {
         views_count: 0,
         is_featured: post.is_featured || false,
         is_pinned: post.is_pinned || false,
-      });
+      }).select("id, slug").single();
 
       if (error) throw error;
-      return true;
+      return { id: inserted.id, slug: inserted.slug };
     } catch (err: any) {
       console.error(err);
       toast.error(`فشل نشر "${post.title.slice(0, 30)}": ${err.message || ""}`);
-      return false;
+      return null;
     }
   };
 
   // ─── تحسين مشاهدات ─────────────────────────────────────────────────────────
-  const seedViews = async (ids: string[]) => {
-    if (!ids.length) return;
+  const seedViewsForPosts = async (publishedIds: string[]) => {
+    if (!publishedIds.length) return;
     try {
       const { data: postsData } = await supabase
         .from("posts")
         .select("id, views_count, created_at")
-        .in("id", ids);
-      if (!postsData) return;
+        .in("id", publishedIds);
+      if (!postsData || postsData.length === 0) return;
       const now = new Date();
       for (const p of postsData) {
         const current = p.views_count || 0;
-        if (current >= 150) continue;
         const diffMin = (now.getTime() - new Date(p.created_at).getTime()) / 60000;
-        const final =
-          diffMin < 60
-            ? Math.floor(Math.random() * (388 - 150 + 1)) + 150
-            : diffMin < 300
-            ? Math.floor(Math.random() * (700 - 455 + 1)) + 455
-            : Math.floor(Math.random() * (1500 - 600 + 1)) + 600;
+        let final = 0;
+        if (current < 150) {
+          if (diffMin < 60) final = Math.floor(Math.random() * (388 - 150 + 1)) + 150;
+          else if (diffMin < 300) final = Math.floor(Math.random() * (700 - 455 + 1)) + 455;
+          else final = Math.floor(Math.random() * (1500 - 600 + 1)) + 600;
+        } else {
+          final = current + Math.floor(Math.random() * 50) + 10;
+        }
         await supabase.from("posts").update({ views_count: final }).eq("id", p.id);
       }
       toast.success(`تم تحسين مشاهدات ${postsData.length} خبر`);
@@ -400,7 +402,7 @@ const JsonNewsImporter = () => {
   };
 
   // ─── نشر الكل ──────────────────────────────────────────────────────────────
-  const publishAll = async () => {
+  const publishAll = async (withIndexing: boolean = false) => {
     if (!posts.length) return;
     if (scheduleMode === "interval" && !intervalStart) {
       toast.error("حدد وقت بداية الفارق الزمني");
@@ -412,24 +414,45 @@ const JsonNewsImporter = () => {
 
     let success = 0;
     const remaining: ImportedPost[] = [];
+    const publishedIds: string[] = [];
+    const publishedUrls: string[] = [];
 
     for (let i = 0; i < posts.length; i++) {
-      const ok = await publishOne(posts[i], i);
-      if (ok) success++;
-      else remaining.push(posts[i]);
+      const res = await publishOne(posts[i], i);
+      if (res) {
+        success++;
+        publishedIds.push(res.id);
+        publishedUrls.push(`https://hasadalyoum.com/article/${res.slug}`);
+      } else {
+        remaining.push(posts[i]);
+      }
       setProgress(Math.round(((i + 1) / posts.length) * 100));
     }
 
     setPosts(remaining);
-    const res = { success, failed: posts.length - success };
-    setResult(res);
+    const resultData = { success, failed: posts.length - success };
+    setResult(resultData);
     toast.success(`تم نشر ${success} من ${posts.length} خبر`);
 
-    if (autoArchive && success > 0) {
-      // إرسال ping للـ sitemap
-      try {
-        await fetch("/api/ping-sitemap", { method: "GET" }).catch(() => {});
-      } catch {}
+    // تحسين المشاهدات تلقائياً
+    if (autoSeedViews && publishedIds.length > 0) {
+      await seedViewsForPosts(publishedIds);
+    }
+
+    // فهرسة Google
+    if (publishedUrls.length > 0) {
+      if (withIndexing) {
+        try {
+          await fetch("/api/ping-sitemap", { method: "GET" }).catch(() => {});
+          await fetch(
+            `https://www.google.com/ping?sitemap=${encodeURIComponent("https://hasadalyoum.com/sitemap.xml")}`,
+            { mode: "no-cors" }
+          );
+          toast.success(`تم إرسال ${publishedUrls.length} رابط لـ Google فهرسة فورية`);
+        } catch { /* silent */ }
+      } else {
+        fetch("/api/ping-sitemap", { method: "GET" }).catch(() => {});
+      }
     }
 
     setIsPublishing(false);
@@ -820,22 +843,22 @@ const JsonNewsImporter = () => {
 
           {isPublishing && <Progress value={progress} className="h-1" />}
 
-          {/* تأكيد أرشفة */}
+          {/* تحسين المشاهدات */}
           <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             <Checkbox
-              id="auto-archive"
-              checked={autoArchive}
-              onCheckedChange={(c) => setAutoArchive(!!c)}
+              id="auto-seed-views"
+              checked={autoSeedViews}
+              onCheckedChange={(c) => setAutoSeedViews(!!c)}
             />
-            <Label htmlFor="auto-archive" className="text-xs cursor-pointer text-amber-800 font-medium">
-              تأكيد أرشفة
+            <Label htmlFor="auto-seed-views" className="text-xs cursor-pointer text-amber-800 font-medium">
+              تحسين المشاهدات تلقائياً بعد النشر
             </Label>
           </div>
 
           {/* أزرار النشر */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
             <Button
-              onClick={() => publishAll()}
+              onClick={() => publishAll(false)}
               disabled={isPublishing || posts.length === 0}
               className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 font-bold"
             >
@@ -846,7 +869,7 @@ const JsonNewsImporter = () => {
               )}
             </Button>
             <Button
-              onClick={() => publishAll()}
+              onClick={() => publishAll(true)}
               disabled={isPublishing || posts.length === 0}
               className="bg-orange-600 hover:bg-orange-700 text-white h-10 font-bold"
             >
