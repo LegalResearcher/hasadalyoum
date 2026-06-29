@@ -22,6 +22,24 @@ import {
 import JSZip from "jszip";
 
 const SITE_URL = "https://hasadalyoum.com";
+const BRAND_COLOR = "#1B3A6B";
+const BRAND_COLOR_HEX = "1B3A6B";
+
+function formatArDate(d: string | Date) {
+  try {
+    return new Date(d).toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" });
+  } catch {
+    return "";
+  }
+}
+function formatArShortDate(d: string) {
+  if (!d) return "";
+  try {
+    return new Date(d).toLocaleDateString("ar-EG");
+  } catch {
+    return d;
+  }
+}
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -189,46 +207,51 @@ ${urls}
   const exportHtml = async () => {
     try {
       const posts = await fetchByDateRange();
-      const period = htmlFrom || htmlTo ? `${htmlFrom || "البداية"} → ${htmlTo || "اليوم"}` : "كل الفترات";
+      const fromAr = htmlFrom ? formatArDate(htmlFrom) : "البداية";
+      const toAr = htmlTo ? formatArDate(htmlTo) : formatArDate(new Date());
+      const period = `${fromAr} — ${toAr}`;
       const rows = posts.map((p, i) => `
         <tr>
           <td>${i + 1}</td>
           <td><a href="${getPostUrl(p.slug || "")}" target="_blank" rel="noopener">${escapeHtml(p.title)}</a></td>
-          <td><span class="views">${(p.views_count || 0).toLocaleString("ar")}</span></td>
-          <td>${(p.published_at || p.created_at || "").split("T")[0]}</td>
+          <td><span class="views-badge">${(p.views_count || 0).toLocaleString("ar-EG")}</span></td>
+          <td>${formatArShortDate(p.published_at || p.created_at || "")}</td>
         </tr>`).join("");
-      const html = `<!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>تقرير حصاد اليوم</title>
-<style>
-  body{margin:0;background:#f0f2f5;font-family:'Tahoma',sans-serif;padding:30px 12px}
-  .card{max-width:900px;margin:0 auto;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden}
-  .head{background:#0a0a0a;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
-  .head .ar{font-size:22px;font-weight:bold} .head .en{opacity:.8;font-size:14px;letter-spacing:1px}
-  .body{padding:28px}
-  h1{color:hsl(41,77%,38%);border-bottom:2px solid hsl(41,77%,38%);padding-bottom:8px;margin:0 0 12px}
-  .meta{color:#555;font-size:13px;margin-bottom:14px}
-  .intro{color:#333;line-height:1.9;margin-bottom:22px}
-  table{width:100%;border-collapse:collapse}
-  thead th{background:hsl(41,77%,38%);color:#fff;padding:10px;text-align:right;font-weight:bold}
-  tbody td{padding:10px;border-bottom:1px solid #eee;font-size:14px}
-  tbody tr:hover{background:#fafafa}
-  td a{color:#1a73e8;text-decoration:none} td a:hover{text-decoration:underline}
-  .views{background:#dcfce7;color:#166534;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:bold}
-  footer{text-align:center;color:#666;font-size:12px;padding:18px;border-top:1px solid #eee;background:#fafafa}
-</style></head>
-<body><div class="card">
-  <div class="head"><div class="ar">حصاد اليوم</div><div class="en">Hasad Alyoum</div></div>
-  <div class="body">
-    <h1>تقرير الأخبار</h1>
-    <div class="meta">إجمالي الأخبار: <b>${posts.length}</b> &nbsp;•&nbsp; الفترة: <b>${period}</b></div>
-    <p class="intro">يستعرض هذا التقرير قائمة بالأخبار المنشورة على موقع حصاد اليوم خلال الفترة المحددة. تتضمن البيانات العنوان، تاريخ النشر، وعدد المشاهدات لكل خبر. يمكن النقر على عنوان أي خبر للانتقال إليه مباشرة على الموقع.</p>
-    <table>
-      <thead><tr><th>#</th><th>العنوان</th><th>المشاهدات</th><th>التاريخ</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>
-  <footer>© ${new Date().getFullYear()} حصاد اليوم — جميع الحقوق محفوظة</footer>
-</div></body></html>`;
+      const year = new Date().getFullYear();
+      const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>تقرير حصاد اليوم</title><style>
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; text-align: right; margin: 0; }
+.card { max-width: 900px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+.header-band { background: ${BRAND_COLOR}; padding: 22px 20px 14px; text-align: center; }
+.header-band h1 { color: white; font-size: 32px; font-weight: bold; margin: 0 0 4px; }
+.header-band p { color: #C8D8F0; font-style: italic; font-size: 14px; margin: 0; }
+.body-content { padding: 24px 28px; }
+.report-title { color: ${BRAND_COLOR}; font-size: 24px; font-weight: bold; text-align: center; text-decoration: underline; margin: 0 0 8px; }
+.divider { border: none; border-top: 2px solid ${BRAND_COLOR}; margin: 8px 0 16px; }
+.report-meta { text-align: center; font-size: 15px; color: #334155; margin-bottom: 20px; }
+.report-meta strong { color: ${BRAND_COLOR}; }
+.intro p { font-size: 14px; color: #334155; line-height: 1.9; margin: 0 0 10px; text-align: justify; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th, td { border: 1px solid #e5e7eb; padding: 10px 12px; text-align: right; }
+th { background: ${BRAND_COLOR}; color: white; font-size: 14px; }
+td { font-size: 13px; color: #334155; }
+tr:nth-child(even) td { background: #F8FAFC; }
+a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
+.views-badge { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: bold; }
+.footer { text-align: center; font-size: 12px; color: #94A3B8; border-top: 1px solid #e5e7eb; padding: 14px; margin-top: 20px; }
+</style></head><body><div class="card">
+<div class="header-band"><h1>حصاد اليوم</h1><p>Hasad Al-Youm &nbsp;·&nbsp; Arab News Network</p></div>
+<div class="body-content">
+<h2 class="report-title">التقرير الصحفي الشهري</h2>
+<hr class="divider"/>
+<div class="report-meta"><strong>إجمالي الأخبار: ${posts.length} خبراً</strong> &nbsp;&nbsp;|&nbsp;&nbsp; <strong>الفترة:</strong> ${period}</div>
+<div class="intro">
+  <p>يُصدر موقع حصاد اليوم — المنبر الإخباري الرقمي المتخصص في رصد المشهد العربي والدولي وقضاياه — تقريره الصحفي الشهري الذي يرصد المشهد الإعلامي والميداني خلال الفترة الممتدة من ${fromAr} حتى ${toAr}.</p>
+  <p>يضمّ هذا التقرير نخبة من أبرز العناوين الإخبارية الموثّقة، التي تعكس في مجملها تطورات متسارعة على الصعيد السياسي، وتحولات ميدانية بالغة الدلالة، فضلاً عن أحداث ذات امتداد إقليمي ودولي.</p>
+  <p>تمثّل هذه المادة الإعلامية مرجعاً أرشيفياً موثوقاً للباحثين والمتابعين والإعلاميين. يمكن النقر على أي عنوان للاطلاع على تفاصيل الخبر الكامل مباشرةً.</p>
+</div>
+<table><thead><tr><th>#</th><th>العنوان</th><th>المشاهدات</th><th>التاريخ</th></tr></thead><tbody>${rows}</tbody></table>
+<div class="footer">© حصاد اليوم — جميع الحقوق محفوظة ${year} | hasadalyoum.com</div>
+</div></div></body></html>`;
       downloadText(html, `hasad-report-${Date.now()}.html`, "text/html");
       toast.success(`تم تصدير ${posts.length} خبر`);
     } catch (e: any) {
@@ -239,7 +262,10 @@ ${urls}
   const exportWord = async () => {
     try {
       const posts = await fetchByDateRange();
-      const period = htmlFrom || htmlTo ? `${htmlFrom || "البداية"} → ${htmlTo || "اليوم"}` : "كل الفترات";
+      const fromAr = htmlFrom ? formatArDate(htmlFrom) : "البداية";
+      const toAr = htmlTo ? formatArDate(htmlTo) : formatArDate(new Date());
+      const period = `${fromAr} — ${toAr}`;
+      const year = new Date().getFullYear();
 
       // Build relationships for hyperlinks
       const rels = posts.map((p, i) => `<Relationship Id="rId${100 + i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escapeXml(getPostUrl(p.slug || ""))}" TargetMode="External"/>`).join("");
@@ -249,26 +275,30 @@ ${urls}
   <w:tc><w:tcPr><w:tcW w:w="500" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:t>${i + 1}</w:t></w:r></w:p></w:tc>
   <w:tc><w:tcPr><w:tcW w:w="5500" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:hyperlink r:id="rId${100 + i}"><w:r><w:rPr><w:color w:val="1A73E8"/><w:u w:val="single"/><w:rtl/></w:rPr><w:t xml:space="preserve">${escapeXml(p.title)}</w:t></w:r></w:hyperlink></w:p></w:tc>
   <w:tc><w:tcPr><w:tcW w:w="1500" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:t>${p.views_count || 0}</w:t></w:r></w:p></w:tc>
-  <w:tc><w:tcPr><w:tcW w:w="1800" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:t>${(p.published_at || p.created_at || "").split("T")[0]}</w:t></w:r></w:p></w:tc>
+  <w:tc><w:tcPr><w:tcW w:w="1800" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">${escapeXml(formatArShortDate(p.published_at || p.created_at || ""))}</w:t></w:r></w:p></w:tc>
 </w:tr>`).join("");
 
       const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <w:body>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="48"/><w:rtl/></w:rPr><w:t>حصاد اليوم</w:t></w:r></w:p>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/><w:pBdr><w:bottom w:val="single" w:sz="12" w:color="C9A227"/></w:pBdr></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/><w:color w:val="C9A227"/><w:rtl/></w:rPr><w:t>تقرير الأخبار</w:t></w:r></w:p>
-  <w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">إجمالي الأخبار: ${posts.length} — الفترة: ${escapeXml(period)}</w:t></w:r></w:p>
+  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/><w:shd w:val="clear" w:color="auto" w:fill="${BRAND_COLOR_HEX}"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="48"/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>حصاد اليوم</w:t></w:r></w:p>
+  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/><w:shd w:val="clear" w:color="auto" w:fill="${BRAND_COLOR_HEX}"/></w:pPr><w:r><w:rPr><w:i/><w:sz w:val="20"/><w:color w:val="C8D8F0"/></w:rPr><w:t xml:space="preserve">Hasad Al-Youm · Arab News Network</w:t></w:r></w:p>
+  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/><w:pBdr><w:bottom w:val="single" w:sz="12" w:color="${BRAND_COLOR_HEX}"/></w:pPr></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/><w:color w:val="${BRAND_COLOR_HEX}"/><w:u w:val="single"/><w:rtl/></w:rPr><w:t>التقرير الصحفي الشهري</w:t></w:r></w:p>
+  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="${BRAND_COLOR_HEX}"/><w:rtl/></w:rPr><w:t xml:space="preserve">إجمالي الأخبار: ${posts.length} خبراً  |  الفترة: ${escapeXml(period)}</w:t></w:r></w:p>
+  <w:p><w:pPr><w:bidi/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">يُصدر موقع حصاد اليوم — المنبر الإخباري الرقمي المتخصص في رصد المشهد العربي والدولي وقضاياه — تقريره الصحفي الشهري الذي يرصد المشهد الإعلامي والميداني خلال الفترة الممتدة من ${escapeXml(fromAr)} حتى ${escapeXml(toAr)}.</w:t></w:r></w:p>
+  <w:p><w:pPr><w:bidi/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">يضمّ هذا التقرير نخبة من أبرز العناوين الإخبارية الموثّقة، التي تعكس في مجملها تطورات متسارعة على الصعيد السياسي، وتحولات ميدانية بالغة الدلالة، فضلاً عن أحداث ذات امتداد إقليمي ودولي.</w:t></w:r></w:p>
+  <w:p><w:pPr><w:bidi/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">تمثّل هذه المادة الإعلامية مرجعاً أرشيفياً موثوقاً للباحثين والمتابعين والإعلاميين. يمكن النقر على أي عنوان للاطلاع على تفاصيل الخبر الكامل مباشرةً.</w:t></w:r></w:p>
   <w:tbl>
     <w:tblPr><w:tblW w:w="9300" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4" w:color="CCCCCC"/><w:left w:val="single" w:sz="4" w:color="CCCCCC"/><w:bottom w:val="single" w:sz="4" w:color="CCCCCC"/><w:right w:val="single" w:sz="4" w:color="CCCCCC"/><w:insideH w:val="single" w:sz="4" w:color="CCCCCC"/><w:insideV w:val="single" w:sz="4" w:color="CCCCCC"/></w:tblBorders></w:tblPr>
     <w:tr>
-      <w:tc><w:tcPr><w:tcW w:w="500" w:type="dxa"/><w:shd w:fill="C9A227"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>#</w:t></w:r></w:p></w:tc>
-      <w:tc><w:tcPr><w:tcW w:w="5500" w:type="dxa"/><w:shd w:fill="C9A227"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>العنوان</w:t></w:r></w:p></w:tc>
-      <w:tc><w:tcPr><w:tcW w:w="1500" w:type="dxa"/><w:shd w:fill="C9A227"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>المشاهدات</w:t></w:r></w:p></w:tc>
-      <w:tc><w:tcPr><w:tcW w:w="1800" w:type="dxa"/><w:shd w:fill="C9A227"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>التاريخ</w:t></w:r></w:p></w:tc>
+      <w:tc><w:tcPr><w:tcW w:w="500" w:type="dxa"/><w:shd w:fill="${BRAND_COLOR_HEX}"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>#</w:t></w:r></w:p></w:tc>
+      <w:tc><w:tcPr><w:tcW w:w="5500" w:type="dxa"/><w:shd w:fill="${BRAND_COLOR_HEX}"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>العنوان</w:t></w:r></w:p></w:tc>
+      <w:tc><w:tcPr><w:tcW w:w="1500" w:type="dxa"/><w:shd w:fill="${BRAND_COLOR_HEX}"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>المشاهدات</w:t></w:r></w:p></w:tc>
+      <w:tc><w:tcPr><w:tcW w:w="1800" w:type="dxa"/><w:shd w:fill="${BRAND_COLOR_HEX}"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>التاريخ</w:t></w:r></w:p></w:tc>
     </w:tr>
     ${tableRows}
   </w:tbl>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:sz w:val="18"/><w:color w:val="666666"/><w:rtl/></w:rPr><w:t>© ${new Date().getFullYear()} حصاد اليوم — جميع الحقوق محفوظة</w:t></w:r></w:p>
+  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/><w:pBdr><w:top w:val="single" w:sz="4" w:color="E5E7EB"/></w:pBdr></w:pPr><w:r><w:rPr><w:sz w:val="18"/><w:color w:val="94A3B8"/><w:rtl/></w:rPr><w:t xml:space="preserve">© حصاد اليوم — جميع الحقوق محفوظة ${year} | hasadalyoum.com</w:t></w:r></w:p>
 </w:body>
 </w:document>`;
 
