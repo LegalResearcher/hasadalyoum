@@ -20,7 +20,7 @@ import { translateError } from "@/lib/errorTranslator";
 import { optimizeImage, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
 import { applyWatermark, generateWatermarkPreview } from "@/lib/imageWatermark";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { generateMetaTitle, generateSEOSlug, extractSEOKeywords } from "@/lib/seoHelpers";
+import { generateMetaTitle, generateSEOSlug, extractSEOKeywords, pingSearchEngines } from "@/lib/seoHelpers";
 import { getPostUrl } from "@/lib/postUrl";
 
 // ── InternalLinkingSuggestions (inline) ──────────────────────────────────────
@@ -220,6 +220,35 @@ const PostEditor = () => {
   const lastAutoSaveRef = useRef<number>(0);
   const draftRestoreCheckedRef = useRef(false);
 
+  // ─── تتبع ما إذا كان النشر جديداً (من draft/scheduled → published) ──────────
+  const prevStatusRef = useRef<string | null>(null);
+
+  // ─── إرسال الروابط لـ Google Indexing API عبر Supabase Edge Function ────────
+  const sendUrlsToGoogleIndexing = async (
+    urls: string[]
+  ): Promise<{ sent: number; failed: number }> => {
+    let sent = 0;
+    let failed = 0;
+    for (let i = 0; i < urls.length; i += 10) {
+      const batch = urls.slice(i, i + 10);
+      try {
+        const { error } = await supabase.functions.invoke("google-indexing", {
+          body: { urls: batch, type: "URL_UPDATED" },
+        });
+        if (error) {
+          console.error("google-indexing batch error:", error);
+          failed += batch.length;
+        } else {
+          sent += batch.length;
+        }
+      } catch (err) {
+        console.error("google-indexing invoke failed:", err);
+        failed += batch.length;
+      }
+    }
+    return { sent, failed };
+  };
+
   const { data: categories } = useCategories();
   const { data: authors } = useAuthors();
 
@@ -263,6 +292,8 @@ const PostEditor = () => {
       const d = new Date(post.created_at || "");
       const tzOff = d.getTimezoneOffset() * 60000;
       const localDate = new Date(d.getTime() - tzOff).toISOString().slice(0, 16);
+      // حفظ الحالة السابقة للخبر قبل أي تعديل
+      prevStatusRef.current = post.status || "draft";
       setFormData({
         title: post.title || "",
         slug: post.slug || "",
@@ -451,6 +482,11 @@ const PostEditor = () => {
     mutationFn: async () => {
       if (!isNew && !isValidUUID(id)) throw new Error("معرف الخبر غير صالح");
 
+      // تحديد ما إذا كان هذا نشراً جديداً (من غير منشور → منشور)
+      const isNewPublish =
+        formData.status === "published" &&
+        (isNew || (prevStatusRef.current !== null && prevStatusRef.current !== "published"));
+
       const wordCount = countWords(formData.content);
       const readingTime = estimateReadingTime(formData.content);
       const { publication_date, ...rest } = formData;
@@ -520,15 +556,38 @@ const PostEditor = () => {
         try { fetch("https://www.google.com/ping?sitemap=https://hasadalyoum.com/sitemap.xml", { mode: "no-cors" }); } catch { }
       }
 
-      return postId;
+      return { postId, isNewPublish, slug: postData.slug || formData.slug };
     },
-    onSuccess: async (postId) => {
+    onSuccess: async (result) => {
+      const postId = result?.postId;
+      const isNewPublish = result?.isNewPublish;
+      const slug = result?.slug;
+
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
       toast.success(isNew ? "تم إنشاء الخبر بنجاح" : "تم حفظ التغييرات");
       if (isNew) localStorage.removeItem(DRAFT_KEY);
+
+      // تحسين المشاهدات تلقائياً
       if (autoSeedViewsOnPublish && postId && formData.status === "published") {
         await seedViewsForPost(postId);
       }
+
+      // فهرسة Google عند أي نشر جديد (من draft/scheduled → published)
+      if (isNewPublish && slug) {
+        const postUrl = `https://hasadalyoum.com/article/${slug}`;
+        // Ping sitemap لـ Google و Bing في الخلفية
+        pingSearchEngines("https://hasadalyoum.com/sitemap.xml")
+          .then((res) => console.log("Ping results:", res))
+          .catch((err) => console.error("Ping failed:", err));
+        // إرسال الرابط لـ Google Indexing API
+        sendUrlsToGoogleIndexing([postUrl])
+          .then(({ sent, failed }) => {
+            if (sent > 0) toast.success("تم إرسال الخبر لـ Google فهرسة فورية");
+            else if (failed > 0) console.warn("Google Indexing API failed for:", postUrl);
+          })
+          .catch((err) => console.error("[Auto-Index] failed:", err));
+      }
+
       navigate("/admin/posts");
     },
     onError: (error: any) => { toast.error(translateError(error)); },
