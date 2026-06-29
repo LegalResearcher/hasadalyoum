@@ -33,11 +33,11 @@ const useCategoryStructure = () => {
 
       if (sErr) throw sErr;
 
-      // الأقسام التي ليس لها إعدادات بعد
+      // جلب كل الأقسام النشطة + قسم most-read الوهمي (is_active=false)
       const { data: allCats, error: cErr } = await supabase
         .from("categories")
-        .select("id, name")
-        .eq("is_active", true)
+        .select("id, name, slug, is_active")
+        .or("is_active.eq.true,slug.eq.most-read")
         .order("display_order", { ascending: true });
 
       if (cErr) throw cErr;
@@ -51,7 +51,7 @@ const useCategoryStructure = () => {
           id: s?.id || "",
           category_id: cat.id,
           category_name: cat.name,
-          show_in_menu: s?.show_in_menu ?? false,
+          show_in_menu: cat.slug === "most-read" ? false : (s?.show_in_menu ?? false),
           show_in_home: (s as any)?.show_in_home ?? false,
           menu_order: s?.display_order ?? idx + 1,
           home_order: (s as any)?.home_order ?? idx + 1,
@@ -265,13 +265,17 @@ const SiteStructureManager = () => {
                     </div>
                   </td>
 
-                  {/* تفعيل القائمة — أزرق داكن */}
+                  {/* تفعيل القائمة — أزرق داكن (مخفي لـ most-read) */}
                   <td className="p-4 text-center">
-                    <Switch
-                      checked={cat.show_in_menu}
-                      onCheckedChange={(v) => handleToggle(cat.category_id, "show_in_menu", v)}
-                      className="data-[state=checked]:bg-slate-800"
-                    />
+                    {cat.category_name === "الأكثر قراءة" ? (
+                      <span className="text-xs text-gray-400">—</span>
+                    ) : (
+                      <Switch
+                        checked={cat.show_in_menu}
+                        onCheckedChange={(v) => handleToggle(cat.category_id, "show_in_menu", v)}
+                        className="data-[state=checked]:bg-slate-800"
+                      />
+                    )}
                   </td>
 
                   {/* تفعيل الرئيسية — أحمر */}
