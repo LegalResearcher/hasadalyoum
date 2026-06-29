@@ -2,9 +2,17 @@ import { Link } from "react-router-dom";
 import { FaFacebookF, FaTwitter, FaTelegram, FaYoutube, FaWhatsapp } from "react-icons/fa";
 import { Rss, Mail, Phone, MapPin } from "lucide-react";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useMenuCategories, useCategories } from "@/hooks/useCategories";
 
 const Footer = () => {
   const { data: settings } = useSiteSettings();
+  const { data: menuCategories = [] } = useMenuCategories();
+  const { data: allCategories = [] } = useCategories();
+
+  // أول 4 أقسام نشطة للروابط السريعة
+  const quickLinks = allCategories.slice(0, 4);
+  // الأقسام الظاهرة في القائمة للعمود الثاني
+  const sectionLinks = menuCategories.slice(0, 5);
 
   const facebookUrl  = settings?.facebook_url  || "https://www.facebook.com/";
   const twitterUrl   = settings?.twitter_url   || "https://x.com/hasadalyoum1";
@@ -38,25 +46,32 @@ const Footer = () => {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
 
-          {/* روابط سريعة */}
+          {/* روابط سريعة — ديناميكية من قاعدة البيانات */}
           <div>
             <h4 className="text-[11px] tracking-[0.25em] uppercase text-accent mb-4">روابط سريعة</h4>
             <ul className="space-y-2 text-xs md:text-sm">
               <li><Link to="/" className="hover:text-accent transition-colors">الرئيسية</Link></li>
-              <li><Link to="/category/local-news" className="hover:text-accent transition-colors">أخبار محلية</Link></li>
-              <li><Link to="/category/news-reports" className="hover:text-accent transition-colors">أخبار وتقارير</Link></li>
-              <li><Link to="/category/international" className="hover:text-accent transition-colors">شؤون دولية</Link></li>
+              {quickLinks.map((cat) => (
+                <li key={cat.id}>
+                  <Link to={`/category/${cat.slug}`} className="hover:text-accent transition-colors">
+                    {cat.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* الأقسام */}
+          {/* الأقسام — ديناميكية من القائمة */}
           <div>
             <h4 className="text-[11px] tracking-[0.25em] uppercase text-accent mb-4">الأقسام</h4>
             <ul className="space-y-2 text-xs md:text-sm">
-              <li><Link to="/category/yemen-press" className="hover:text-accent transition-colors">اليمن في الصحافة</Link></li>
-              <li><Link to="/category/opinions" className="hover:text-accent transition-colors">آراء واتجاهات</Link></li>
-              <li><Link to="/category/sports" className="hover:text-accent transition-colors">رياضة</Link></li>
-              <li><Link to="/category/technology" className="hover:text-accent transition-colors">علوم وتكنولوجيا</Link></li>
+              {sectionLinks.map((cat) => (
+                <li key={cat.id}>
+                  <Link to={`/category/${cat.slug}`} className="hover:text-accent transition-colors">
+                    {cat.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
