@@ -106,7 +106,7 @@ const Article = () => {
             <div
               className="prose prose-sm md:prose max-w-none"
               dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(article.content, {
+                __html: DOMPurify.sanitize(article.content.replace(/\n/g, '<br>'), {
                   ALLOWED_TAGS: ["div", "a", "strong", "p", "br", "span", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "b", "i", "em", "blockquote", "img", "figure", "figcaption"],
                   ALLOWED_ATTR: ["href", "class", "target", "rel", "src", "alt", "width", "height"],
                 }),
