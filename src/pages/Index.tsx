@@ -9,6 +9,9 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+// slug خاص للأكثر قراءة — يُعالج كمكوّن منفصل وليس قسماً عادياً
+const MOST_READ_SLUG = "most-read";
+
 // ─── خريطة slug → layout ───────────────────────────────────────────────────────
 // عدّل هذه الخريطة إذا أردت تغيير طريقة عرض قسم معيّن
 const LAYOUT_MAP: Record<string, "featured" | "grid" | "list" | "opinions"> = {
@@ -95,19 +98,21 @@ const Index = () => {
       {/* إعلان أعلى الصفحة */}
       <AdSlot position="header" className="mb-10" />
 
-      {/* الأكثر قراءة (ثابت دائماً) */}
-      <MostRead limit={6} />
-
       {/* الأقسام الديناميكية — تُعرض فقط إذا كان show_in_home = true في لوحة التحكم */}
-      {homeCategories.map((cat) => (
-        <NewsSection
-          key={cat.slug}
-          title={cat.name}
-          categorySlug={cat.slug}
-          layout={LAYOUT_MAP[cat.slug] ?? "grid"}
-          limit={cat.limit}
-        />
-      ))}
+      {homeCategories.map((cat) =>
+        cat.slug === MOST_READ_SLUG ? (
+          // "الأكثر قراءة" يُعرض كمكوّن خاص وليس NewsSection عادي
+          <MostRead key="most-read" limit={cat.limit} />
+        ) : (
+          <NewsSection
+            key={cat.slug}
+            title={cat.name}
+            categorySlug={cat.slug}
+            layout={LAYOUT_MAP[cat.slug] ?? "grid"}
+            limit={cat.limit}
+          />
+        )
+      )}
     </Layout>
   );
 };
