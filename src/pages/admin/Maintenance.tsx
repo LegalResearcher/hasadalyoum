@@ -291,17 +291,17 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
         const views = (p.views_count || 0).toString();
         return `
 <w:tr><w:trPr><w:cantSplit/></w:trPr>
-  <w:tc><w:tcPr><w:tcW w:w="600" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_CTR}<w:vAlign w:val="center"/></w:tcPr>
-    <w:p><w:pPr><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="19"/><w:szCs w:val="19"/></w:rPr><w:t>${i + 1}</w:t></w:r></w:p>
-  </w:tc>
-  <w:tc><w:tcPr><w:tcW w:w="7200" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_TXT}<w:vAlign w:val="center"/></w:tcPr>
-    <w:p><w:pPr><w:jc w:val="right"/><w:bidi/></w:pPr><w:hyperlink r:id="rId${100 + i}" w:history="1"><w:r><w:rPr>${FONT}<w:color w:val="1a56cc"/><w:sz w:val="19"/><w:szCs w:val="19"/><w:u w:val="single"/><w:rtl/></w:rPr><w:t xml:space="preserve">${titleText}</w:t></w:r></w:hyperlink></w:p>
+  <w:tc><w:tcPr><w:tcW w:w="1200" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_CTR}<w:vAlign w:val="center"/></w:tcPr>
+    <w:p><w:pPr><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:rtl/></w:rPr><w:t xml:space="preserve">${dateText}</w:t></w:r></w:p>
   </w:tc>
   <w:tc><w:tcPr><w:tcW w:w="1080" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_CTR}<w:vAlign w:val="center"/></w:tcPr>
     <w:p><w:pPr><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="19"/><w:szCs w:val="19"/></w:rPr><w:t>${views}</w:t></w:r></w:p>
   </w:tc>
-  <w:tc><w:tcPr><w:tcW w:w="1200" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_CTR}<w:vAlign w:val="center"/></w:tcPr>
-    <w:p><w:pPr><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:rtl/></w:rPr><w:t xml:space="preserve">${dateText}</w:t></w:r></w:p>
+  <w:tc><w:tcPr><w:tcW w:w="7200" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_TXT}<w:vAlign w:val="center"/></w:tcPr>
+    <w:p><w:pPr><w:jc w:val="right"/><w:bidi/></w:pPr><w:hyperlink r:id="rId${100 + i}" w:history="1"><w:r><w:rPr>${FONT}<w:color w:val="1a56cc"/><w:sz w:val="19"/><w:szCs w:val="19"/><w:u w:val="single"/><w:rtl/></w:rPr><w:t xml:space="preserve">${titleText}</w:t></w:r></w:hyperlink></w:p>
+  </w:tc>
+  <w:tc><w:tcPr><w:tcW w:w="600" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_CTR}<w:vAlign w:val="center"/></w:tcPr>
+    <w:p><w:pPr><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="19"/><w:szCs w:val="19"/></w:rPr><w:t>${i + 1}</w:t></w:r></w:p>
   </w:tc>
 </w:tr>`;
       }).join("");
@@ -329,12 +329,12 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
   <w:p><w:pPr><w:spacing w:before="0" w:after="160"/></w:pPr></w:p>
   <w:tbl>
     <w:tblPr><w:tblW w:w="10080" w:type="dxa"/><w:bidiVisual/><w:tblBorders>${BORDER}<w:insideH w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/></w:tblBorders></w:tblPr>
-    <w:tblGrid><w:gridCol w:w="600"/><w:gridCol w:w="7200"/><w:gridCol w:w="1080"/><w:gridCol w:w="1200"/></w:tblGrid>
+    <w:tblGrid><w:gridCol w:w="1200"/><w:gridCol w:w="1080"/><w:gridCol w:w="7200"/><w:gridCol w:w="600"/></w:tblGrid>
     <w:tr><w:trPr><w:tblHeader/></w:trPr>
-      ${headerCell("#", 600, "center")}
-      ${headerCell("العنوان", 7200, "right")}
-      ${headerCell("المشاهدات", 1080, "center")}
       ${headerCell("التاريخ", 1200, "center")}
+      ${headerCell("المشاهدات", 1080, "center")}
+      ${headerCell("العنوان", 7200, "right")}
+      ${headerCell("#", 600, "center")}
     </w:tr>
     ${tableRows}
   </w:tbl>
