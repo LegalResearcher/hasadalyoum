@@ -20,6 +20,7 @@ import { translateError } from "@/lib/errorTranslator";
 import { optimizeImage, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
 import { applyWatermark, generateWatermarkPreview } from "@/lib/imageWatermark";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { generateMetaTitle, generateSEOSlug, extractSEOKeywords } from "@/lib/seoHelpers";
 import { getPostUrl } from "@/lib/postUrl";
 
 // ── InternalLinkingSuggestions (inline) ──────────────────────────────────────
@@ -341,8 +342,8 @@ const PostEditor = () => {
   const handleTitleChange = (title: string) => {
     setFormData(prev => ({
       ...prev, title,
-      slug: prev.slug || generateSlug(title),
-      meta_title: prev.meta_title || title.slice(0, 60),
+      slug: prev.slug || generateSEOSlug(title),
+      meta_title: prev.meta_title || generateMetaTitle(title),
     }));
   };
 
@@ -454,8 +455,29 @@ const PostEditor = () => {
       const readingTime = estimateReadingTime(formData.content);
       const { publication_date, ...rest } = formData;
 
+      // العلامة المائية: رفع صورة منفصلة عند الحفظ وحفظ URL الجديد
+      let finalImageUrl = rest.featured_image;
+      if (enableWatermark && rest.featured_image && watermarkLogoUrl) {
+        try {
+          toast.info("جاري إنشاء صورة المشاركة مع العلامة المائية...");
+          const wm = await applyWatermark(rest.featured_image, watermarkLogoUrl);
+          const wmFileName = `og-${Math.random().toString(36).substring(2)}-${Date.now()}.webp`;
+          const { error: wmErr } = await supabase.storage.from("post-images").upload(wmFileName, wm.blob, { contentType: "image/webp" });
+          if (!wmErr) {
+            const { data: wmUrl } = supabase.storage.from("post-images").getPublicUrl(wmFileName);
+            finalImageUrl = wmUrl.publicUrl;
+            toast.success("تم إنشاء صورة المشاركة بنجاح");
+          } else {
+            toast.error("فشل رفع صورة العلامة المائية، سيتم استخدام الصورة الأصلية");
+          }
+        } catch {
+          toast.error("فشل إنشاء العلامة المائية، سيتم استخدام الصورة الأصلية");
+        }
+      }
+
       const postData: any = {
         ...rest,
+        featured_image: finalImageUrl,
         meta_title: rest.meta_title || rest.title.slice(0, 60),
         meta_description: rest.meta_description || rest.excerpt || rest.content.replace(/<[^>]*>/g, "").slice(0, 160),
         meta_keywords: rest.meta_keywords || generateKeywords(rest.title, rest.content),
