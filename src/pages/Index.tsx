@@ -6,27 +6,70 @@ import MostRead from "@/components/news/MostRead";
 import AdSlot from "@/components/news/AdSlot";
 import { SITE_NAME, SITE_URL, SITE_LOGO } from "@/lib/seoHelpers";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
+// ─── خريطة slug → layout ───────────────────────────────────────────────────────
+// عدّل هذه الخريطة إذا أردت تغيير طريقة عرض قسم معيّن
+const LAYOUT_MAP: Record<string, "featured" | "grid" | "list" | "opinions"> = {
+  "local-news":    "featured",
+  "news-reports":  "featured",
+  "opinions":      "opinions",
+};
+
+// ─── جلب الأقسام المُفعَّلة في الرئيسية من category_settings ─────────────────
+const useHomeCategories = () => {
+  return useQuery({
+    queryKey: ["home-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("category_settings")
+        .select(
+          "show_in_home, home_order, posts_per_page, categories(id, name, slug)"
+        )
+        .eq("show_in_home", true)
+        .order("home_order", { ascending: true });
+
+      if (error) throw error;
+
+      return (data || [])
+        .map((row: any) => ({
+          slug:       row.categories?.slug  as string,
+          name:       row.categories?.name  as string,
+          limit:      (row.posts_per_page   as number) ?? 5,
+          home_order: (row.home_order       as number) ?? 99,
+        }))
+        .filter((c) => c.slug && c.name);
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+};
+
+// ─── الصفحة الرئيسية ──────────────────────────────────────────────────────────
 const Index = () => {
   const { data: settings } = useSiteSettings();
-  const siteDescription = settings?.site_description || "منبرك الأول لأخبار اليمن والحدث لحظة بلحظة";
+  const { data: homeCategories = [] } = useHomeCategories();
+
+  const siteDescription =
+    settings?.site_description ||
+    "منبرك الأول لأخبار اليمن والحدث لحظة بلحظة";
 
   const organizationSchema = {
     "@context": "https://schema.org",
-    "@type": "NewsMediaOrganization",
-    name: SITE_NAME,
-    url: SITE_URL,
-    logo: { "@type": "ImageObject", url: SITE_LOGO },
+    "@type":    "NewsMediaOrganization",
+    name:       SITE_NAME,
+    url:        SITE_URL,
+    logo:       { "@type": "ImageObject", url: SITE_LOGO },
   };
 
   const websiteSchema = {
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    name: SITE_NAME,
-    url: SITE_URL,
+    "@type":    "WebSite",
+    name:       SITE_NAME,
+    url:        SITE_URL,
     potentialAction: {
-      "@type": "SearchAction",
-      target: `${SITE_URL}/search?q={search_term_string}`,
+      "@type":       "SearchAction",
+      target:        `${SITE_URL}/search?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   };
@@ -37,28 +80,34 @@ const Index = () => {
         <title>{`${SITE_NAME} | منبرك الأول لأخبار اليمن والحدث لحظة بلحظة`}</title>
         <meta name="description" content={siteDescription} />
         <link rel="canonical" href={SITE_URL} />
-        <meta property="og:type" content="website" />
+        <meta property="og:type"      content="website" />
         <meta property="og:site_name" content={SITE_NAME} />
-        <meta property="og:url" content={SITE_URL} />
+        <meta property="og:url"       content={SITE_URL} />
         <script type="application/ld+json">{JSON.stringify(organizationSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
       </Helmet>
 
+      {/* السلايدر الرئيسي */}
       <section className="mb-10">
         <HeroSlider />
       </section>
 
+      {/* إعلان أعلى الصفحة */}
       <AdSlot position="header" className="mb-10" />
 
-      <NewsSection title="أخبار محلية" categorySlug="local-news" layout="featured" limit={5} />
+      {/* الأكثر قراءة (ثابت دائماً) */}
       <MostRead limit={6} />
-      <NewsSection title="أخبار وتقارير" categorySlug="news-reports" layout="featured" limit={5} />
-      <NewsSection title="اليمن في الصحافة" categorySlug="yemen-press" layout="grid" limit={4} />
-      <NewsSection title="شؤون دولية" categorySlug="international" layout="grid" limit={3} />
-      <NewsSection title="آراء واتجاهات" categorySlug="opinions" layout="opinions" limit={4} />
-      <NewsSection title="علوم وتكنولوجيا" categorySlug="technology" layout="grid" limit={2} />
-      <NewsSection title="رياضة" categorySlug="sports" layout="grid" limit={3} />
-      <NewsSection title="فيديو حصاد اليوم" categorySlug="videos" layout="grid" limit={3} />
+
+      {/* الأقسام الديناميكية — تُعرض فقط إذا كان show_in_home = true في لوحة التحكم */}
+      {homeCategories.map((cat) => (
+        <NewsSection
+          key={cat.slug}
+          title={cat.name}
+          categorySlug={cat.slug}
+          layout={LAYOUT_MAP[cat.slug] ?? "grid"}
+          limit={cat.limit}
+        />
+      ))}
     </Layout>
   );
 };
