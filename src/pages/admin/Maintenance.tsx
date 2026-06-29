@@ -252,9 +252,9 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
 <hr class="divider"/>
 <div class="report-meta"><strong>إجمالي الأخبار: ${posts.length} خبراً</strong> &nbsp;&nbsp;|&nbsp;&nbsp; <strong>الفترة:</strong> ${period}</div>
 <div class="intro">
-  <p>يُصدر موقع حصاد اليوم — المنبر الإخباري الرقمي المتخصص في رصد المشهد العربي والدولي وقضاياه — تقريره الصحفي الشهري الذي يرصد المشهد الإعلامي والميداني خلال الفترة الممتدة من ${fromAr} حتى ${toAr}.</p>
-  <p>يضمّ هذا التقرير نخبة من أبرز العناوين الإخبارية الموثّقة، التي تعكس في مجملها تطورات متسارعة على الصعيد السياسي، وتحولات ميدانية بالغة الدلالة، فضلاً عن أحداث ذات امتداد إقليمي ودولي.</p>
-  <p>تمثّل هذه المادة الإعلامية مرجعاً أرشيفياً موثوقاً للباحثين والمتابعين والإعلاميين. يمكن النقر على أي عنوان للاطلاع على تفاصيل الخبر الكامل مباشرةً.</p>
+  <p>يُصدر موقع "حصاد اليوم" الإخباري — من قلب العاصمة صنعاء — تقريره الصحفي الشهري الشامل، الذي يرصد ويحلل المشهدين الإعلامي والميداني على الساحتين المحلية والدولية، خلال الفترة الممتدة من ${fromAr} وحتى ${toAr}.</p>
+  <p>يضمّ التقرير نخبة من أبرز العناوين الإخبارية الموثّقة، التي تعكس في مجملها التطورات المتسارعة والتحولات الميدانية بالغة الدلالة في الشأن اليمني، فضلاً عن القضايا ذات الامتداد الإقليمي والدولي.</p>
+  <p>وتسهيلاً على الباحثين، والمتابعين، والإعلاميين، تُمثّل هذه المادة أرشيفاً رقمياً تفاعلياً وموثوقاً؛ يتيح للقارئ النقر على أي عنوان للانتقال مباشرةً والاطلاع على تفاصيل التغطية الكاملة.</p>
 </div>
 <table><thead><tr><th>#</th><th>العنوان</th><th>المشاهدات</th><th>التاريخ</th></tr></thead><tbody>${rows}</tbody></table>
 <div class="footer">© حصاد اليوم — جميع الحقوق محفوظة ${year} | hasadalyoum.com</div>
@@ -323,9 +323,9 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
     <w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">${escapeXml(period)}</w:t></w:r>
   </w:p>
   <w:p><w:pPr><w:spacing w:before="160" w:after="0"/></w:pPr></w:p>
-  <w:p><w:pPr><w:spacing w:before="80" w:after="80"/><w:jc w:val="right"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">يُصدر موقع حصاد اليوم — المنبر الإخباري الرقمي المتخصص في رصد المشهد العربي والدولي وقضاياه — تقريره الصحفي الشهري الذي يرصد المشهد الإعلامي والميداني خلال الفترة الممتدة من ${escapeXml(fromAr)} حتى ${escapeXml(toAr)}.</w:t></w:r></w:p>
-  <w:p><w:pPr><w:spacing w:before="80" w:after="80"/><w:jc w:val="right"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">يضمّ هذا التقرير نخبة من أبرز العناوين الإخبارية الموثّقة، التي تعكس في مجملها تطورات متسارعة على الصعيد السياسي، وتحولات ميدانية بالغة الدلالة، فضلاً عن أحداث ذات امتداد إقليمي ودولي.</w:t></w:r></w:p>
-  <w:p><w:pPr><w:spacing w:before="80" w:after="80"/><w:jc w:val="right"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">تمثّل هذه المادة الإعلامية مرجعاً أرشيفياً موثوقاً للباحثين والمتابعين والإعلاميين. يمكن النقر على أي عنوان للاطلاع على تفاصيل الخبر الكامل مباشرةً.</w:t></w:r></w:p>
+  <w:p><w:pPr><w:spacing w:before="80" w:after="80"/><w:jc w:val="right"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">يُصدر موقع "حصاد اليوم" الإخباري — من قلب العاصمة صنعاء — تقريره الصحفي الشهري الشامل، الذي يرصد ويحلل المشهدين الإعلامي والميداني على الساحتين المحلية والدولية، خلال الفترة الممتدة من ${escapeXml(fromAr)} وحتى ${escapeXml(toAr)}.</w:t></w:r></w:p>
+  <w:p><w:pPr><w:spacing w:before="80" w:after="80"/><w:jc w:val="right"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">يضمّ التقرير نخبة من أبرز العناوين الإخبارية الموثّقة، التي تعكس في مجملها التطورات المتسارعة والتحولات الميدانية بالغة الدلالة في الشأن اليمني، فضلاً عن القضايا ذات الامتداد الإقليمي والدولي.</w:t></w:r></w:p>
+  <w:p><w:pPr><w:spacing w:before="80" w:after="80"/><w:jc w:val="right"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">وتسهيلاً على الباحثين، والمتابعين، والإعلاميين، تُمثّل هذه المادة أرشيفاً رقمياً تفاعلياً وموثوقاً؛ يتيح للقارئ النقر على أي عنوان للانتقال مباشرةً والاطلاع على تفاصيل التغطية الكاملة.</w:t></w:r></w:p>
   <w:p><w:pPr><w:spacing w:before="0" w:after="160"/></w:pPr></w:p>
   <w:tbl>
     <w:tblPr><w:tblW w:w="10080" w:type="dxa"/><w:bidiVisual/><w:tblBorders>${BORDER}<w:insideH w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/></w:tblBorders></w:tblPr>
