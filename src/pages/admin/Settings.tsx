@@ -10,6 +10,7 @@ import { Save, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { translateError } from "@/lib/errorTranslator";
+import SiteStructureManager from "@/components/admin/SiteStructureManager";
 
 const Settings = () => {
   const queryClient = useQueryClient();
@@ -220,6 +221,11 @@ const Settings = () => {
               {isUploadingLogo && <p className="text-xs text-muted-foreground">جاري الرفع...</p>}
             </CardContent>
           </Card>
+        </div>
+
+        {/* هيكلية الموقع والصفحة الرئيسية */}
+        <div className="mt-6">
+          <SiteStructureManager />
         </div>
       </div>
     </AdminLayout>
