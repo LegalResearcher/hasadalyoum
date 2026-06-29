@@ -270,35 +270,69 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
       // Build relationships for hyperlinks
       const rels = posts.map((p, i) => `<Relationship Id="rId${100 + i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escapeXml(getPostUrl(p.slug || ""))}" TargetMode="External"/>`).join("");
 
-      const tableRows = posts.map((p, i) => `
-<w:tr>
-  <w:tc><w:tcPr><w:tcW w:w="500" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:t>${i + 1}</w:t></w:r></w:p></w:tc>
-  <w:tc><w:tcPr><w:tcW w:w="5500" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:hyperlink r:id="rId${100 + i}"><w:r><w:rPr><w:color w:val="1A73E8"/><w:u w:val="single"/><w:rtl/></w:rPr><w:t xml:space="preserve">${escapeXml(p.title)}</w:t></w:r></w:hyperlink></w:p></w:tc>
-  <w:tc><w:tcPr><w:tcW w:w="1500" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:t>${p.views_count || 0}</w:t></w:r></w:p></w:tc>
-  <w:tc><w:tcPr><w:tcW w:w="1800" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">${escapeXml(formatArShortDate(p.published_at || p.created_at || ""))}</w:t></w:r></w:p></w:tc>
-</w:tr>`).join("");
+      // Reusable XML fragments matching the Aljanoubvoice reference template
+      const FONT = `<w:rFonts w:ascii="Arial" w:cs="Arial" w:eastAsia="Arial" w:hAnsi="Arial"/>`;
+      const BORDER = `<w:top w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/><w:left w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/><w:right w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/>`;
+      const HEAD_MAR = `<w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="140" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="140" w:type="dxa"/></w:tcMar>`;
+      const CELL_MAR_CTR = `<w:tcMar><w:top w:w="80" w:type="dxa"/><w:left w:w="80" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tcMar>`;
+      const CELL_MAR_TXT = `<w:tcMar><w:top w:w="80" w:type="dxa"/><w:left w:w="140" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:right w:w="140" w:type="dxa"/></w:tcMar>`;
+
+      const tableRows = posts.map((p, i) => {
+        const zebra = i % 2 === 1 ? "f8fafc" : "ffffff";
+        const dateText = escapeXml(formatArShortDate(p.published_at || p.created_at || ""));
+        const titleText = escapeXml(p.title);
+        const views = (p.views_count || 0).toString();
+        return `
+<w:tr><w:trPr><w:cantSplit/></w:trPr>
+  <w:tc><w:tcPr><w:tcW w:w="600" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_CTR}<w:vAlign w:val="center"/></w:tcPr>
+    <w:p><w:pPr><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="19"/><w:szCs w:val="19"/></w:rPr><w:t>${i + 1}</w:t></w:r></w:p>
+  </w:tc>
+  <w:tc><w:tcPr><w:tcW w:w="7200" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_TXT}<w:vAlign w:val="center"/></w:tcPr>
+    <w:p><w:pPr><w:jc w:val="right"/><w:bidi/></w:pPr><w:hyperlink r:id="rId${100 + i}" w:history="1"><w:r><w:rPr>${FONT}<w:color w:val="1a56cc"/><w:sz w:val="19"/><w:szCs w:val="19"/><w:u w:val="single"/><w:rtl/></w:rPr><w:t xml:space="preserve">${titleText}</w:t></w:r></w:hyperlink></w:p>
+  </w:tc>
+  <w:tc><w:tcPr><w:tcW w:w="1080" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_CTR}<w:vAlign w:val="center"/></w:tcPr>
+    <w:p><w:pPr><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="19"/><w:szCs w:val="19"/></w:rPr><w:t>${views}</w:t></w:r></w:p>
+  </w:tc>
+  <w:tc><w:tcPr><w:tcW w:w="1200" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${zebra}"/>${CELL_MAR_CTR}<w:vAlign w:val="center"/></w:tcPr>
+    <w:p><w:pPr><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:rtl/></w:rPr><w:t xml:space="preserve">${dateText}</w:t></w:r></w:p>
+  </w:tc>
+</w:tr>`;
+      }).join("");
+
+      const headerCell = (label: string, w: number, align: "right" | "center") =>
+        `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:tcBorders>${BORDER}</w:tcBorders><w:shd w:val="clear" w:color="auto" w:fill="${BRAND_COLOR_HEX.toLowerCase()}"/>${HEAD_MAR}<w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="${align}"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:b/><w:bCs/><w:color w:val="ffffff"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t>${label}</w:t></w:r></w:p></w:tc>`;
 
       const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <w:body>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/><w:shd w:val="clear" w:color="auto" w:fill="${BRAND_COLOR_HEX}"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="48"/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>حصاد اليوم</w:t></w:r></w:p>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/><w:shd w:val="clear" w:color="auto" w:fill="${BRAND_COLOR_HEX}"/></w:pPr><w:r><w:rPr><w:i/><w:sz w:val="20"/><w:color w:val="C8D8F0"/></w:rPr><w:t xml:space="preserve">Hasad Al-Youm · Arab News Network</w:t></w:r></w:p>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/><w:pBdr><w:bottom w:val="single" w:sz="12" w:color="${BRAND_COLOR_HEX}"/></w:pPr></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/><w:color w:val="${BRAND_COLOR_HEX}"/><w:u w:val="single"/><w:rtl/></w:rPr><w:t>التقرير الصحفي الشهري</w:t></w:r></w:p>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="${BRAND_COLOR_HEX}"/><w:rtl/></w:rPr><w:t xml:space="preserve">إجمالي الأخبار: ${posts.length} خبراً  |  الفترة: ${escapeXml(period)}</w:t></w:r></w:p>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">يُصدر موقع حصاد اليوم — المنبر الإخباري الرقمي المتخصص في رصد المشهد العربي والدولي وقضاياه — تقريره الصحفي الشهري الذي يرصد المشهد الإعلامي والميداني خلال الفترة الممتدة من ${escapeXml(fromAr)} حتى ${escapeXml(toAr)}.</w:t></w:r></w:p>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">يضمّ هذا التقرير نخبة من أبرز العناوين الإخبارية الموثّقة، التي تعكس في مجملها تطورات متسارعة على الصعيد السياسي، وتحولات ميدانية بالغة الدلالة، فضلاً عن أحداث ذات امتداد إقليمي ودولي.</w:t></w:r></w:p>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="both"/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t xml:space="preserve">تمثّل هذه المادة الإعلامية مرجعاً أرشيفياً موثوقاً للباحثين والمتابعين والإعلاميين. يمكن النقر على أي عنوان للاطلاع على تفاصيل الخبر الكامل مباشرةً.</w:t></w:r></w:p>
+  <w:p><w:pPr><w:shd w:val="clear" w:color="auto" w:fill="${BRAND_COLOR_HEX.toLowerCase()}"/><w:spacing w:before="0" w:after="0"/><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:b/><w:bCs/><w:color w:val="ffffff"/><w:sz w:val="56"/><w:szCs w:val="56"/><w:rtl/></w:rPr><w:t>حصاد اليوم</w:t></w:r></w:p>
+  <w:p><w:pPr><w:shd w:val="clear" w:color="auto" w:fill="${BRAND_COLOR_HEX.toLowerCase()}"/><w:spacing w:before="0" w:after="240"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr>${FONT}<w:i/><w:iCs/><w:color w:val="bfdbfe"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">Hasad Al-Youm  ·  Arab News Network</w:t></w:r></w:p>
+  <w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="10" w:space="0" w:color="c9a227"/></w:pBdr><w:spacing w:before="200" w:after="80"/><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:b/><w:bCs/><w:color w:val="${BRAND_COLOR_HEX.toLowerCase()}"/><w:sz w:val="44"/><w:szCs w:val="44"/><w:rtl/></w:rPr><w:t>التقرير الصحفي الشهري</w:t></w:r></w:p>
+  <w:p><w:pPr><w:spacing w:before="120" w:after="60"/><w:jc w:val="center"/><w:bidi/></w:pPr>
+    <w:r><w:rPr>${FONT}<w:b/><w:bCs/><w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">إجمالي الأخبار: </w:t></w:r>
+    <w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">${posts.length} خبراً</w:t></w:r>
+    <w:r><w:rPr>${FONT}<w:color w:val="cbd5e1"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">    |    </w:t></w:r>
+    <w:r><w:rPr>${FONT}<w:b/><w:bCs/><w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">الفترة: </w:t></w:r>
+    <w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">${escapeXml(period)}</w:t></w:r>
+  </w:p>
+  <w:p><w:pPr><w:spacing w:before="160" w:after="0"/></w:pPr></w:p>
+  <w:p><w:pPr><w:spacing w:before="80" w:after="80"/><w:jc w:val="right"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">يُصدر موقع حصاد اليوم — المنبر الإخباري الرقمي المتخصص في رصد المشهد العربي والدولي وقضاياه — تقريره الصحفي الشهري الذي يرصد المشهد الإعلامي والميداني خلال الفترة الممتدة من ${escapeXml(fromAr)} حتى ${escapeXml(toAr)}.</w:t></w:r></w:p>
+  <w:p><w:pPr><w:spacing w:before="80" w:after="80"/><w:jc w:val="right"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">يضمّ هذا التقرير نخبة من أبرز العناوين الإخبارية الموثّقة، التي تعكس في مجملها تطورات متسارعة على الصعيد السياسي، وتحولات ميدانية بالغة الدلالة، فضلاً عن أحداث ذات امتداد إقليمي ودولي.</w:t></w:r></w:p>
+  <w:p><w:pPr><w:spacing w:before="80" w:after="80"/><w:jc w:val="right"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="334155"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:rtl/></w:rPr><w:t xml:space="preserve">تمثّل هذه المادة الإعلامية مرجعاً أرشيفياً موثوقاً للباحثين والمتابعين والإعلاميين. يمكن النقر على أي عنوان للاطلاع على تفاصيل الخبر الكامل مباشرةً.</w:t></w:r></w:p>
+  <w:p><w:pPr><w:spacing w:before="0" w:after="160"/></w:pPr></w:p>
   <w:tbl>
-    <w:tblPr><w:tblW w:w="9300" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4" w:color="CCCCCC"/><w:left w:val="single" w:sz="4" w:color="CCCCCC"/><w:bottom w:val="single" w:sz="4" w:color="CCCCCC"/><w:right w:val="single" w:sz="4" w:color="CCCCCC"/><w:insideH w:val="single" w:sz="4" w:color="CCCCCC"/><w:insideV w:val="single" w:sz="4" w:color="CCCCCC"/></w:tblBorders></w:tblPr>
-    <w:tr>
-      <w:tc><w:tcPr><w:tcW w:w="500" w:type="dxa"/><w:shd w:fill="${BRAND_COLOR_HEX}"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>#</w:t></w:r></w:p></w:tc>
-      <w:tc><w:tcPr><w:tcW w:w="5500" w:type="dxa"/><w:shd w:fill="${BRAND_COLOR_HEX}"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>العنوان</w:t></w:r></w:p></w:tc>
-      <w:tc><w:tcPr><w:tcW w:w="1500" w:type="dxa"/><w:shd w:fill="${BRAND_COLOR_HEX}"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>المشاهدات</w:t></w:r></w:p></w:tc>
-      <w:tc><w:tcPr><w:tcW w:w="1800" w:type="dxa"/><w:shd w:fill="${BRAND_COLOR_HEX}"/></w:tcPr><w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/><w:rtl/></w:rPr><w:t>التاريخ</w:t></w:r></w:p></w:tc>
+    <w:tblPr><w:tblW w:w="10080" w:type="dxa"/><w:bidiVisual/><w:tblBorders>${BORDER}<w:insideH w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/></w:tblBorders></w:tblPr>
+    <w:tblGrid><w:gridCol w:w="600"/><w:gridCol w:w="7200"/><w:gridCol w:w="1080"/><w:gridCol w:w="1200"/></w:tblGrid>
+    <w:tr><w:trPr><w:tblHeader/></w:trPr>
+      ${headerCell("#", 600, "center")}
+      ${headerCell("العنوان", 7200, "right")}
+      ${headerCell("المشاهدات", 1080, "center")}
+      ${headerCell("التاريخ", 1200, "center")}
     </w:tr>
     ${tableRows}
   </w:tbl>
-  <w:p><w:pPr><w:bidi/><w:jc w:val="center"/><w:pBdr><w:top w:val="single" w:sz="4" w:color="E5E7EB"/></w:pBdr></w:pPr><w:r><w:rPr><w:sz w:val="18"/><w:color w:val="94A3B8"/><w:rtl/></w:rPr><w:t xml:space="preserve">© حصاد اليوم — جميع الحقوق محفوظة ${year} | hasadalyoum.com</w:t></w:r></w:p>
+  <w:p><w:pPr><w:spacing w:before="120" w:after="60"/><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="cbd5e1"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:rtl/></w:rPr><w:t xml:space="preserve">© حصاد اليوم — جميع الحقوق محفوظة ${year} | hasadalyoum.com</w:t></w:r></w:p>
+  <w:sectPr><w:pgSz w:w="12240" w:h="15840" w:orient="portrait"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080" w:header="720" w:footer="720" w:gutter="0"/><w:bidi/></w:sectPr>
 </w:body>
 </w:document>`;
 
@@ -310,6 +344,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>
 </Types>`;
 
       const mainRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -317,12 +352,18 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
 </Relationships>`;
 
+      const settings = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="14"/></w:compat><w:themeFontLang w:val="en-US" w:bidi="ar-SA"/></w:settings>`;
+      const docRelsFinal = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>${rels}</Relationships>`;
+
       const zip = new JSZip();
       zip.file("[Content_Types].xml", contentTypes);
       zip.folder("_rels")!.file(".rels", mainRels);
       const wordF = zip.folder("word")!;
       wordF.file("document.xml", doc);
-      wordF.folder("_rels")!.file("document.xml.rels", docRels);
+      wordF.file("settings.xml", settings);
+      wordF.folder("_rels")!.file("document.xml.rels", docRelsFinal);
       const blob = await zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
       downloadBlob(blob, `hasad-report-${Date.now()}.docx`);
       toast.success(`تم تصدير ${posts.length} خبر`);
