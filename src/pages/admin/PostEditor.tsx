@@ -77,7 +77,7 @@ const PostEditor = () => {
     meta_keywords: "",
     scheduled_at: "",
     hide_after: "",
-    badge: "",
+    badge: "انفراد",
     is_pinned: false,
     pinned_order: null as number | null,
   });
@@ -118,7 +118,7 @@ const PostEditor = () => {
         meta_keywords: post.meta_keywords || "",
         scheduled_at: post.scheduled_at ? post.scheduled_at.slice(0, 16) : "",
         hide_after: post.hide_after ? post.hide_after.slice(0, 16) : "",
-        badge: (post as any).badge || "",
+        badge: (post as any).badge || "انفراد",
         is_pinned: (post as any).is_pinned || false,
         pinned_order: (post as any).pinned_order ?? null,
       });
@@ -500,8 +500,9 @@ const PostEditor = () => {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <Label>المقتطف</Label>
+                    <Label>ملخص الخبر</Label>
                     <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">عدد الجمل:</span>
                       <Select value={String(splitCount)} onValueChange={(v) => setSplitCount(+v)}>
                         <SelectTrigger className="h-8 w-20"><SelectValue /></SelectTrigger>
                         <SelectContent>{[1,2,3,4,5].map(n => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
@@ -509,15 +510,18 @@ const PostEditor = () => {
                       <Button type="button" size="sm" variant="outline" onClick={handleAutoSplitExcerpt}>
                         <Sparkles className="h-3 w-3 ml-1" /> تقسيم تلقائي
                       </Button>
+                      <Button type="button" size="sm" variant="outline" onClick={handleFormatParagraphs}>
+                        ¶ تنسيق فقرات
+                      </Button>
                       <Button type="button" size="sm" variant="ghost" onClick={() => setFormData(p => ({ ...p, excerpt: "" }))}>
-                        <Eraser className="h-3 w-3 ml-1" /> مسح
+                        <Eraser className="h-3 w-3 ml-1" /> مسح الملخص
                       </Button>
                     </div>
                   </div>
                   <Textarea
                     value={formData.excerpt}
                     onChange={(e) => setFormData((prev) => ({ ...prev, excerpt: e.target.value }))}
-                    placeholder="ملخص قصير للخبر"
+                    placeholder="اضغط 'تقسيم تلقائي' لاستخراج الجملة الأولى كملخص، أو اكتب ملخصاً مخصصاً"
                     rows={3}
                   />
                 </div>
