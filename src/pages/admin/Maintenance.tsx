@@ -372,7 +372,16 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
       wordF.file("settings.xml", settings);
       wordF.folder("_rels")!.file("document.xml.rels", docRelsFinal);
       const blob = await zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-      downloadBlob(blob, `hasad-report-${Date.now()}.docx`);
+      const fmtLabel = (d: string | Date) => {
+        const dt = new Date(d);
+        const day = dt.getDate();
+        const month = dt.toLocaleDateString("ar-YE", { month: "long" });
+        return `${day} ${month}`;
+      };
+      const fileYear = new Date(htmlTo || new Date()).getFullYear();
+      const fromLabel = htmlFrom ? fmtLabel(htmlFrom) : fmtLabel(new Date());
+      const toLabel = htmlTo ? fmtLabel(htmlTo) : fmtLabel(new Date());
+      downloadBlob(blob, `فترة ${fromLabel} — ${toLabel}.${fileYear}م.docx`);
       toast.success(`تم تصدير ${posts.length} خبر`);
     } catch (e: any) {
       toast.error("فشل التصدير: " + e.message);
