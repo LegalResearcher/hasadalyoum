@@ -238,6 +238,13 @@ tr:nth-child(even) td { background: #F8FAFC; }
 a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
 .views-badge { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: bold; }
 .footer { text-align: center; font-size: 12px; color: #94A3B8; border-top: 1px solid #e5e7eb; padding: 14px; margin-top: 20px; }
+@media print {
+  body { background: white; padding: 0; }
+  .card { box-shadow: none; border-radius: 0; max-width: 100%; }
+  a { color: #1A56CC; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; }
+}
 </style></head><body><div class="card">
 <div class="header-band"><h1>حصاد اليوم</h1><p>Hasad Al-Youm &nbsp;·&nbsp; Arab News Network</p></div>
 <div class="body-content">
