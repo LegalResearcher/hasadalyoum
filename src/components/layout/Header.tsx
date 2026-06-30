@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
-import hasadIcon from "@/assets/logo-icon.svg";
 
 const Header = () => {
   const today = new Date().toLocaleDateString("ar-EG", {
