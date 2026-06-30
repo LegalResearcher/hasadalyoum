@@ -37,14 +37,14 @@ const Header = () => {
           {/* الهوية: الأيقونة + الاسم العربي + الاسم الإنجليزي — كتلة واحدة */}
           <Link
             to="/"
-            className="group flex-1 flex items-center justify-center gap-3 md:gap-4 min-w-0 order-1 sm:order-2"
+            className="group flex-1 flex items-center justify-center gap-4 md:gap-5 min-w-0 order-1 sm:order-2"
           >
             {/* أيقونة الشعار */}
             <div className="shrink-0 flex items-center justify-center self-center">
               <img
                 src="/logo.png"
                 alt="حصاد اليوم"
-                className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 object-contain transition-transform duration-500 group-hover:rotate-[6deg] group-hover:scale-105"
+                className="w-16 h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 object-contain transition-transform duration-500 group-hover:rotate-[6deg] group-hover:scale-105"
               />
             </div>
 
