@@ -152,8 +152,10 @@ export type Database = {
           created_at: string
           display_order: number | null
           display_style: string | null
+          home_order: number | null
           id: string
           posts_per_page: number | null
+          show_in_home: boolean | null
           show_in_menu: boolean | null
           updated_at: string
         }
@@ -162,8 +164,10 @@ export type Database = {
           created_at?: string
           display_order?: number | null
           display_style?: string | null
+          home_order?: number | null
           id?: string
           posts_per_page?: number | null
+          show_in_home?: boolean | null
           show_in_menu?: boolean | null
           updated_at?: string
         }
@@ -172,8 +176,10 @@ export type Database = {
           created_at?: string
           display_order?: number | null
           display_style?: string | null
+          home_order?: number | null
           id?: string
           posts_per_page?: number | null
+          show_in_home?: boolean | null
           show_in_menu?: boolean | null
           updated_at?: string
         }
