@@ -40,7 +40,7 @@ const Header = () => {
             className="group flex-1 flex items-center justify-center gap-4 md:gap-5 min-w-0 order-1 sm:order-2"
           >
             {/* أيقونة الشعار */}
-            <div className="shrink-0 flex items-center justify-center self-center">
+            <div className="flex items-center justify-center self-center">
               <img
                 src="/logo.png"
                 alt="حصاد اليوم"
