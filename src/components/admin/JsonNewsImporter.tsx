@@ -308,7 +308,7 @@ const JsonNewsImporter = () => {
       const readingTime = Math.ceil(wordCount / 200);
       const keywords = extractSEOKeywords(post.title, post.content);
 
-      let finalStatus: string = post.status;
+      let finalStatus: "draft" | "hidden" | "published" | "scheduled" | "under_review" = post.status;
       let finalScheduledAt: string | null = null;
       let createdAt: string = new Date().toISOString();
 

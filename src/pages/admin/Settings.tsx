@@ -49,8 +49,8 @@ const Settings = () => {
     }
   }, [siteSettings]);
 
-  const saveMutation = useMutation({
-    mutationFn: async (keys?: string[]) => {
+  const saveMutation = useMutation<void, Error, string[] | undefined>({
+    mutationFn: async (keys) => {
       const entries = keys
         ? Object.entries(settings).filter(([k]) => keys.includes(k))
         : Object.entries(settings);
@@ -104,7 +104,7 @@ const Settings = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">إعدادات الموقع</h1>
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+          <Button onClick={() => saveMutation.mutate(undefined)} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin ml-2" />
             ) : (
