@@ -1,0 +1,10 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="حصاد اليوم">
+  <!-- إطار الكرة الأرضية -->
+  <circle cx="100" cy="100" r="88" stroke="#0c0c0e" stroke-width="9.2" fill="none"/>
+  <!-- خط الطول العمودي -->
+  <ellipse cx="100" cy="100" rx="37" ry="88" stroke="#0c0c0e" stroke-width="6" fill="none"/>
+  <!-- حرف H ذهبي مدمج -->
+  <rect x="51" y="56" width="15.6" height="88" rx="3.2" fill="#af8a2f"/>
+  <rect x="133.4" y="56" width="15.6" height="88" rx="3.2" fill="#af8a2f"/>
+  <rect x="51" y="92.4" width="98" height="15.2" rx="3.2" fill="#af8a2f"/>
+</svg>
