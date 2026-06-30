@@ -49,8 +49,8 @@ const Settings = () => {
     }
   }, [siteSettings]);
 
-  const saveMutation = useMutation({
-    mutationFn: async (keys?: string[]) => {
+  const saveMutation = useMutation<void, Error, string[] | undefined>({
+    mutationFn: async (keys) => {
       const entries = keys
         ? Object.entries(settings).filter(([k]) => keys.includes(k))
         : Object.entries(settings);
