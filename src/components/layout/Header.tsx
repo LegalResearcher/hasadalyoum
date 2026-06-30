@@ -41,7 +41,7 @@ const Header = () => {
           >
             {/* الأيقونة المجردة (SVG) */}
             <img
-              src={hasadIcon}
+              src="/logo.png"
               alt="حصاد اليوم"
               className="shrink-0 w-9 h-9 md:w-12 md:h-12 lg:w-14 lg:h-14 transition-transform duration-500 group-hover:rotate-[6deg] group-hover:scale-105"
             />
