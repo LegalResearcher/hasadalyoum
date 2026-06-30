@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
+import hasadLogo from "@/assets/logo.png";
 
 const Header = () => {
   const today = new Date().toLocaleDateString("ar-EG", {
@@ -34,16 +35,25 @@ const Header = () => {
           </button>
         </div>
 
-        {/* Logo */}
-        <Link to="/" className="flex flex-col items-center text-center group">
+        {/* Logo — بجانب النص، بنفس منطق الجنوب فويس */}
+        <Link to="/" className="flex items-center justify-center gap-4 group">
           <img
-            src="/logo.png"
-            alt="حصاد اليوم"
-            className="h-14 md:h-20 lg:h-24 w-auto object-contain mb-1 transition-transform duration-200 group-hover:scale-[1.03]"
+            src={hasadLogo}
+            alt="شعار حصاد اليوم"
+            className="w-14 h-14 md:w-20 md:h-20 object-contain transition-all duration-500 group-hover:rotate-[8deg] group-hover:scale-110"
           />
-          <span className="mt-1 text-[10px] md:text-xs text-muted-foreground tracking-widest">
-            صحيفة إلكترونية مستقلة
-          </span>
+
+          <div className="flex flex-col items-start border-r-2 border-border pr-4">
+            <span className="text-[10px] md:text-xs tracking-[0.35em] uppercase text-accent mb-1">
+              HASAD AL · YOUM
+            </span>
+            <h1 className="font-serif-ar text-2xl md:text-4xl lg:text-5xl leading-none text-foreground">
+              حصاد اليوم
+            </h1>
+            <span className="mt-1.5 text-[10px] md:text-xs text-muted-foreground tracking-widest font-bold uppercase group-hover:text-accent transition-colors">
+              صحيفة إلكترونية مستقلة
+            </span>
+          </div>
         </Link>
 
         {/* Auth / actions */}
