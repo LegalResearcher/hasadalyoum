@@ -37,17 +37,19 @@ const Header = () => {
           {/* الهوية: الأيقونة + الاسم العربي + الاسم الإنجليزي — كتلة واحدة */}
           <Link
             to="/"
-            className="group flex-1 flex items-center justify-center gap-2.5 md:gap-3.5 min-w-0 order-1 sm:order-2"
+            className="group flex-1 flex items-center justify-center gap-3 md:gap-4 min-w-0 order-1 sm:order-2"
           >
-            {/* الأيقونة المجردة (SVG) */}
-            <img
-              src="/logo.png"
-              alt="حصاد اليوم"
-              className="shrink-0 w-9 h-9 md:w-12 md:h-12 lg:w-14 lg:h-14 transition-transform duration-500 group-hover:rotate-[6deg] group-hover:scale-105"
-            />
+            {/* أيقونة الشعار */}
+            <div className="shrink-0 flex items-center justify-center self-center">
+              <img
+                src="/logo.png"
+                alt="حصاد اليوم"
+                className="w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 object-contain transition-transform duration-500 group-hover:rotate-[6deg] group-hover:scale-105"
+              />
+            </div>
 
             {/* الاسم العربي فوق الإنجليزي — وحدة نصية واحدة بدون فاصل */}
-            <div className="flex flex-col items-start min-w-0 leading-none">
+            <div className="flex flex-col items-start justify-center self-center min-w-0 leading-none">
               <h1 className="font-cairo font-extrabold text-xl md:text-3xl lg:text-[2.15rem] text-foreground tracking-tight whitespace-nowrap">
                 حصاد اليوم
               </h1>
