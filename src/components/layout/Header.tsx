@@ -36,15 +36,12 @@ const Header = () => {
 
         {/* Logo */}
         <Link to="/" className="flex flex-col items-center text-center group">
-          <span className="text-[10px] md:text-xs tracking-[0.35em] uppercase text-accent mb-1">
-            HASAD AL · YOUM
-          </span>
-          <h1 className="font-serif-ar text-3xl md:text-5xl lg:text-6xl leading-none text-foreground">
-            حصاد
-            <span className="mx-2 text-accent">·</span>
-            اليوم
-          </h1>
-          <span className="mt-2 text-[10px] md:text-xs text-muted-foreground tracking-widest">
+          <img
+            src="/logo.png"
+            alt="حصاد اليوم"
+            className="h-14 md:h-20 lg:h-24 w-auto object-contain mb-1 transition-transform duration-200 group-hover:scale-[1.03]"
+          />
+          <span className="mt-1 text-[10px] md:text-xs text-muted-foreground tracking-widest">
             صحيفة إلكترونية مستقلة
           </span>
         </Link>
