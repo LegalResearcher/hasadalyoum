@@ -137,12 +137,14 @@ ${urls}
     toast.success(`تم توليد sitemap.xml (${(data || []).length} رابط)`);
   };
 
-  const fetchPostsFiltered = async (categoryId: string | "all") => {
+  const fetchPostsFiltered = async (categoryId: string | "all", from?: string, to?: string) => {
     let q = supabase
       .from("posts")
       .select("*, category:categories(name), author:authors(name)")
       .order("created_at", { ascending: false });
     if (categoryId !== "all") q = q.eq("category_id", categoryId);
+    if (from) q = q.gte("created_at", from);
+    if (to) q = q.lte("created_at", to + "T23:59:59");
     const { data, error } = await q;
     if (error) throw error;
     return data || [];
@@ -150,7 +152,7 @@ ${urls}
 
   const exportJsonByCategory = async () => {
     try {
-      const posts = await fetchPostsFiltered(exportCategory);
+      const posts = await fetchPostsFiltered(exportCategory, htmlFrom, htmlTo);
       const payload = {
         exported_at: new Date().toISOString(),
         type: "posts",
@@ -602,7 +604,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
             </div>
 
             <div className="border-t pt-4 space-y-3">
-              <Label>تصدير HTML / Word (بفلتر التاريخ)</Label>
+              <Label>تصدير HTML / Word / JSON (بفلتر التاريخ - اختياري)</Label>
               <div className="grid grid-cols-2 gap-2 max-w-md">
                 <div><Label className="text-xs">من</Label><Input type="date" value={htmlFrom} onChange={(e) => setHtmlFrom(e.target.value)} /></div>
                 <div><Label className="text-xs">إلى</Label><Input type="date" value={htmlTo} onChange={(e) => setHtmlTo(e.target.value)} /></div>
