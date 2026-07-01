@@ -53,9 +53,6 @@ const Header = () => {
               <h1 className="font-cairo font-extrabold text-xl md:text-3xl lg:text-[2.15rem] text-foreground tracking-tight whitespace-nowrap">
                 حصاد اليوم
               </h1>
-              <span className="mt-1 text-[9px] md:text-[10px] lg:text-[11px] font-cairo font-semibold text-accent tracking-[0.22em] uppercase whitespace-nowrap">
-                Hasad Al-Youm
-              </span>
             </div>
           </Link>
 
