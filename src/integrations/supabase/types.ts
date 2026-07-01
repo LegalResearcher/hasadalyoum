@@ -445,6 +445,7 @@ export type Database = {
           scheduled_at: string | null
           slug: string
           source_type: string | null
+          source_url: string | null
           status: Database["public"]["Enums"]["post_status"] | null
           title: string
           updated_at: string
@@ -475,6 +476,7 @@ export type Database = {
           scheduled_at?: string | null
           slug: string
           source_type?: string | null
+          source_url?: string | null
           status?: Database["public"]["Enums"]["post_status"] | null
           title: string
           updated_at?: string
@@ -505,6 +507,7 @@ export type Database = {
           scheduled_at?: string | null
           slug?: string
           source_type?: string | null
+          source_url?: string | null
           status?: Database["public"]["Enums"]["post_status"] | null
           title?: string
           updated_at?: string
