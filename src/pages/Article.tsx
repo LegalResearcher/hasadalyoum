@@ -83,6 +83,39 @@ const Article = () => {
     }
   }, []);
 
+  // ===== إزالة أي رابط ملفوف حول صور داخل نص الخبر =====
+  // بيمنع فتح رابط الصورة عند الضغط عليها (مباشرة أو من داخل رابط <a>)
+  const stripImageLinks = useCallback((htmlContent: string): string => {
+    try {
+      if (typeof window === "undefined" || !htmlContent) return htmlContent;
+      const doc = new DOMParser().parseFromString(htmlContent, "text/html");
+      const IMAGE_EXT_PATTERN = /\.(jpe?g|png|gif|webp|svg|bmp|avif)(\?.*)?$/i;
+
+      doc.querySelectorAll("a").forEach((anchor) => {
+        const href = anchor.getAttribute("href") || "";
+        const containsImg = anchor.querySelector("img") !== null;
+        const linksToImageFile = IMAGE_EXT_PATTERN.test(href);
+
+        if (containsImg || linksToImageFile) {
+          // فكّ الرابط: خلي محتوى الـ <a> (الصورة) بمكانه بدون أي href
+          while (anchor.firstChild) {
+            anchor.parentNode?.insertBefore(anchor.firstChild, anchor);
+          }
+          anchor.remove();
+        }
+      });
+
+      // احتياطاً: أي <img> لسا واقف لحاله، تأكد ما عندها أي سلوك نقر
+      doc.querySelectorAll("img").forEach((img) => {
+        img.removeAttribute("onclick");
+      });
+
+      return doc.body.innerHTML;
+    } catch {
+      return htmlContent;
+    }
+  }, []);
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -276,7 +309,7 @@ const Article = () => {
               className="article-body prose prose-sm md:prose max-w-none text-[18px] leading-loose text-foreground"
               dangerouslySetInnerHTML={{
                 __html: DOMPurify.sanitize(
-                  processContentWithSubheadings(article.content),
+                  stripImageLinks(processContentWithSubheadings(article.content)),
                   {
                     ALLOWED_TAGS: ["div", "a", "strong", "p", "br", "span", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "b", "i", "em", "blockquote", "img", "figure", "figcaption"],
                     ALLOWED_ATTR: ["href", "class", "target", "rel", "src", "alt", "width", "height"],
