@@ -224,6 +224,14 @@
   @apply rounded-lg my-4;
 }
 
+/* منع أي تفاعل عند الضغط على صور الخبر (لا فتح، لا تكبير، لا نقر) */
+.article-body img,
+.article-body a:has(img) {
+  pointer-events: none;
+  cursor: default;
+  -webkit-user-drag: none;
+}
+
 .prose blockquote {
   @apply border-r-4 border-accent pr-4 my-4 italic text-muted-foreground;
 }
