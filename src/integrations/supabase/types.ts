@@ -445,6 +445,7 @@ export type Database = {
           scheduled_at: string | null
           slug: string
           source_type: string | null
+          source_url: string | null
           status: Database["public"]["Enums"]["post_status"] | null
           title: string
           updated_at: string
@@ -475,6 +476,7 @@ export type Database = {
           scheduled_at?: string | null
           slug: string
           source_type?: string | null
+          source_url?: string | null
           status?: Database["public"]["Enums"]["post_status"] | null
           title: string
           updated_at?: string
@@ -505,6 +507,7 @@ export type Database = {
           scheduled_at?: string | null
           slug?: string
           source_type?: string | null
+          source_url?: string | null
           status?: Database["public"]["Enums"]["post_status"] | null
           title?: string
           updated_at?: string
@@ -528,6 +531,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      posts_backup_before_delete: {
+        Row: {
+          author_id: string | null
+          badge: string | null
+          category_id: string | null
+          content: string | null
+          created_at: string | null
+          excerpt: string | null
+          external_video_url: string | null
+          featured_image: string | null
+          hide_after: string | null
+          id: string | null
+          is_breaking: boolean | null
+          is_featured: boolean | null
+          is_pinned: boolean | null
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
+          pinned_order: number | null
+          published_at: string | null
+          reading_time: number | null
+          scheduled_at: string | null
+          slug: string | null
+          source_type: string | null
+          status: Database["public"]["Enums"]["post_status"] | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+          views_count: number | null
+          word_count: number | null
+        }
+        Insert: {
+          author_id?: string | null
+          badge?: string | null
+          category_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          external_video_url?: string | null
+          featured_image?: string | null
+          hide_after?: string | null
+          id?: string | null
+          is_breaking?: boolean | null
+          is_featured?: boolean | null
+          is_pinned?: boolean | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
+          pinned_order?: number | null
+          published_at?: string | null
+          reading_time?: number | null
+          scheduled_at?: string | null
+          slug?: string | null
+          source_type?: string | null
+          status?: Database["public"]["Enums"]["post_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          views_count?: number | null
+          word_count?: number | null
+        }
+        Update: {
+          author_id?: string | null
+          badge?: string | null
+          category_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          excerpt?: string | null
+          external_video_url?: string | null
+          featured_image?: string | null
+          hide_after?: string | null
+          id?: string | null
+          is_breaking?: boolean | null
+          is_featured?: boolean | null
+          is_pinned?: boolean | null
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
+          pinned_order?: number | null
+          published_at?: string | null
+          reading_time?: number | null
+          scheduled_at?: string | null
+          slug?: string | null
+          source_type?: string | null
+          status?: Database["public"]["Enums"]["post_status"] | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          views_count?: number | null
+          word_count?: number | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
