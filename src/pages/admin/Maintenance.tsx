@@ -413,31 +413,38 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
     enabled: targetSpecific && searchTerm.length > 1,
   });
 
-  const computeAutoViews = (createdAt: string) => {
+  const computeAutoViews = (createdAt: string, isNewsReports: boolean) => {
     const ageH = (Date.now() - new Date(createdAt).getTime()) / 3600000;
-    let lo = 600, hi = 1500;
-    if (ageH < 1) { lo = 150; hi = 388; }
-    else if (ageH < 5) { lo = 455; hi = 700; }
+    // قسم "أخبار وتقارير": المنطق الأصلي — باقي الأقسام: نفس البنية بنطاق مصغّر ضمن 126-683
+    let lo = isNewsReports ? 600 : 451;
+    let hi = isNewsReports ? 1500 : 683;
+    if (ageH < 1) { lo = isNewsReports ? 150 : 126; hi = isNewsReports ? 388 : 250; }
+    else if (ageH < 5) { lo = isNewsReports ? 455 : 251; hi = isNewsReports ? 700 : 450; }
     return Math.floor(lo + Math.random() * (hi - lo));
   };
 
   const applyGrowth = async () => {
     setUpdating(true);
     try {
-      let targets: Array<{ id: string; created_at: string; views_count: number; target?: number }> = [];
+      let targets: Array<{ id: string; created_at: string; views_count: number; target?: number; isNewsReports?: boolean }> = [];
       if (targetSpecific) {
         targets = selectedPosts.map((p) => ({ id: p.id, created_at: "", views_count: 0, target: p.views }));
       } else {
-        let q = supabase.from("posts").select("id, created_at, views_count");
+        let q = supabase.from("posts").select("id, created_at, views_count, category:categories(name)");
         if (growthCategory !== "all") q = q.eq("category_id", growthCategory);
         if (growthFrom) q = q.gte("created_at", growthFrom);
         const { data } = await q;
-        targets = (data || []) as any;
+        targets = (data || []).map((p: any) => ({
+          id: p.id,
+          created_at: p.created_at,
+          views_count: p.views_count,
+          isNewsReports: p.category?.name === "أخبار وتقارير",
+        }));
       }
       let updated = 0;
       for (const t of targets) {
         const v = t.target != null ? t.target :
-          autoGrowth ? computeAutoViews(t.created_at) :
+          autoGrowth ? computeAutoViews(t.created_at, !!t.isNewsReports) :
           Math.floor(minViews + Math.random() * (maxViews - minViews));
         const { error } = await supabase.from("posts").update({ views_count: v }).eq("id", t.id);
         if (!error) updated++;
