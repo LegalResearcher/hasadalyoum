@@ -404,20 +404,33 @@ const JsonNewsImporter = () => {
     try {
       const { data: postsData } = await supabase
         .from("posts")
-        .select("id, views_count, created_at")
+        .select("id, views_count, created_at, category:categories(name)")
         .in("id", publishedIds);
       if (!postsData || postsData.length === 0) return;
       const now = new Date();
       for (const p of postsData) {
         const current = p.views_count || 0;
         const diffMin = (now.getTime() - new Date(p.created_at).getTime()) / 60000;
+        const isNewsReports = (p.category as any)?.name === "أخبار وتقارير";
         let final = 0;
-        if (current < 150) {
-          if (diffMin < 60) final = Math.floor(Math.random() * (388 - 150 + 1)) + 150;
-          else if (diffMin < 300) final = Math.floor(Math.random() * (700 - 455 + 1)) + 455;
-          else final = Math.floor(Math.random() * (1500 - 600 + 1)) + 600;
+        if (isNewsReports) {
+          // المنطق الأصلي: يُطبّق فقط على قسم "أخبار وتقارير"
+          if (current < 150) {
+            if (diffMin < 60) final = Math.floor(Math.random() * (388 - 150 + 1)) + 150;
+            else if (diffMin < 300) final = Math.floor(Math.random() * (700 - 455 + 1)) + 455;
+            else final = Math.floor(Math.random() * (1500 - 600 + 1)) + 600;
+          } else {
+            final = current + Math.floor(Math.random() * 50) + 10;
+          }
         } else {
-          final = current + Math.floor(Math.random() * 50) + 10;
+          // نفس بنية المنطق (تقسيم زمني ثلاثي) لكن بنطاقات مصغّرة ضمن 126-683 لباقي الأقسام
+          if (current < 126) {
+            if (diffMin < 60) final = Math.floor(Math.random() * (250 - 126 + 1)) + 126;
+            else if (diffMin < 300) final = Math.floor(Math.random() * (450 - 251 + 1)) + 251;
+            else final = Math.floor(Math.random() * (683 - 451 + 1)) + 451;
+          } else {
+            final = Math.min(683, current + Math.floor(Math.random() * 21) + 5);
+          }
         }
         await supabase.from("posts").update({ views_count: final }).eq("id", p.id);
       }
