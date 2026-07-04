@@ -388,7 +388,8 @@ const JsonNewsImporter = () => {
 
       // إرجاع URL فقط إذا كان الخبر منشوراً فعلاً
       if (inserted?.status === "published") {
-        return { id: inserted.id, publishedUrl: `https://hasadalyoum.com/article/${inserted.slug}` };
+        const { getPostUrl } = await import("@/lib/postUrl");
+        return { id: inserted.id, publishedUrl: getPostUrl(inserted.slug, inserted.created_at) };
       }
       return { id: inserted?.id, publishedUrl: null };
     } catch (err: any) {
