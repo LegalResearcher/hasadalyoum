@@ -16,6 +16,7 @@ import {
   generateNewsArticleSchema,
   generateFAQSchema,
 } from "@/lib/seoHelpers";
+import { getPostUrl } from "@/lib/postUrl";
 
 // ===== التوقيع الثابت لقنوات التواصل =====
 const SOCIAL_SIGNATURE = `\n\n📲 تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
@@ -129,7 +130,7 @@ const Article = () => {
   };
 
   // ===== روابط المشاركة =====
-  const SHARE_URL = article ? `${SITE_URL}/article/${article.id}` : "";
+  const SHARE_URL = article ? getPostUrl(article.slug || article.id, article.created_at) : "";
   const shareTitle = article?.title || "";
   const fullShareText = `${shareTitle}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${SHARE_URL}${SOCIAL_SIGNATURE}`;
   const telegramShareText = `${shareTitle}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${SHARE_URL}\n\n📲 تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
