@@ -98,7 +98,14 @@ interface SchemaPost {
 /**
  * الرابط الكنسي (Canonical URL) لصفحة الخبر — يطابق بنية روابط حصاد اليوم الحالية
  */
-export function generateCanonicalUrl(post: { slug?: string | null; id: string }): string {
+export function generateCanonicalUrl(post: { slug?: string | null; id: string; created_at?: string | null; published_at?: string | null }): string {
+  const dateStr = post.published_at || post.created_at;
+  if (post.slug && dateStr) {
+    // نستخدم نفس صيغة /YYYY/MM/DD/slug بتوقيت اليمن — لتطابق canonical مع الرابط الفعلي
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { getPostUrl } = require("./postUrl");
+    return getPostUrl(post.slug, dateStr);
+  }
   return `${SITE_URL}/article/${post.slug || post.id}`;
 }
 
