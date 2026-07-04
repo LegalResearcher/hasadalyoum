@@ -106,7 +106,7 @@ Sitemap: ${SITE_URL}/feed
     toast.info("جاري جلب الأخبار...");
     const { data, error } = await supabase
       .from("posts")
-      .select("slug, updated_at, published_at")
+      .select("slug, updated_at, published_at, created_at")
       .eq("status", "published");
     if (error) {
       toast.error("فشل جلب الأخبار");
@@ -117,7 +117,7 @@ Sitemap: ${SITE_URL}/feed
       .map((p) => {
         const lastmod = (p.updated_at || p.published_at || new Date().toISOString()).split("T")[0];
         return `  <url>
-    <loc>${escapeXml(getPostUrl(p.slug!))}</loc>
+    <loc>${escapeXml(getPostUrl(p.slug!, p.published_at || p.created_at))}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -215,7 +215,7 @@ ${urls}
       const rows = posts.map((p, i) => `
         <tr>
           <td>${i + 1}</td>
-          <td><a href="${getPostUrl(p.slug || "")}" target="_blank" rel="noopener">${escapeHtml(p.title)}</a></td>
+          <td><a href="${getPostUrl(p.slug || "", p.published_at || p.created_at || "")}" target="_blank" rel="noopener">${escapeHtml(p.title)}</a></td>
           <td><span class="views-badge">${(p.views_count || 0).toLocaleString("ar-EG")}</span></td>
           <td>${formatArShortDate(p.published_at || p.created_at || "")}</td>
         </tr>`).join("");
@@ -277,7 +277,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
       const year = new Date().getFullYear();
 
       // Build relationships for hyperlinks
-      const rels = posts.map((p, i) => `<Relationship Id="rId${100 + i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escapeXml(getPostUrl(p.slug || ""))}" TargetMode="External"/>`).join("");
+      const rels = posts.map((p, i) => `<Relationship Id="rId${100 + i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escapeXml(getPostUrl(p.slug || "", (p as any).published_at || (p as any).created_at || ""))}" TargetMode="External"/>`).join("");
 
       // Reusable XML fragments matching the Aljanoubvoice reference template
       const FONT = `<w:rFonts w:ascii="Arial" w:cs="Arial" w:eastAsia="Arial" w:hAnsi="Arial"/>`;
