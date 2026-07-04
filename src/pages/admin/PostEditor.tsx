@@ -93,7 +93,7 @@ function InternalLinkingSuggestions({ title, content, currentPostId, onInsertToE
     staleTime: 30000,
   });
 
-  const getUrl = (post: any) => getPostUrl(post.slug || '');
+  const getUrl = (post: any) => getPostUrl(post.slug || '', post.created_at || post.published_at || new Date().toISOString());
 
   const handleCopy = async (post: any) => {
     const link = `<a href="${getUrl(post)}">${post.title}</a>`;
@@ -585,7 +585,7 @@ const PostEditor = () => {
 
       // فهرسة Google عند أي نشر جديد (من draft/scheduled → published)
       if (isNewPublish && slug) {
-        const postUrl = `https://hasadalyoum.com/article/${slug}`;
+        const postUrl = getPostUrl(slug, new Date().toISOString());
         // Ping sitemap لـ Google و Bing في الخلفية
         pingSearchEngines("https://hasadalyoum.com/sitemap.xml")
           .then((res) => console.log("Ping results:", res))
