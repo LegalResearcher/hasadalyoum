@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Article from "./pages/Article";
+import ArticleLegacyRedirect from "./pages/ArticleLegacyRedirect";
 import Category from "./pages/Category";
 import MostReadPage from "./pages/MostReadPage";
 import RSSFeedsPage from "./pages/RSSFeedsPage";
@@ -37,7 +38,8 @@ const App = () => (
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Index />} />
-          <Route path="/article/:slug" element={<Article />} />
+          <Route path="/article/:slug" element={<ArticleLegacyRedirect />} />
+          <Route path="/:year/:month/:day/:slug" element={<Article />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/most-read" element={<MostReadPage />} />
           <Route path="/feed" element={<RSSFeedsPage />} />
