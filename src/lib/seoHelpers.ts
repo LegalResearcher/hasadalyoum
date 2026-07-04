@@ -1,6 +1,7 @@
 // أدوات SEO متقدمة لتحسين فهرسة جوجل - مُستنسخة ومُكيّفة لموقع حصاد اليوم
 
 export const SITE_URL = "https://hasadalyoum.vercel.app"; // ⚠️ حدّث هذا الرابط إن وُجد دومين مخصص
+import { getPostUrl } from "./postUrl";
 export const SITE_NAME = "حصاد اليوم";
 export const SITE_LOGO = `${SITE_URL}/logo.png`;
 
@@ -98,7 +99,12 @@ interface SchemaPost {
 /**
  * الرابط الكنسي (Canonical URL) لصفحة الخبر — يطابق بنية روابط حصاد اليوم الحالية
  */
-export function generateCanonicalUrl(post: { slug?: string | null; id: string }): string {
+export function generateCanonicalUrl(post: { slug?: string | null; id: string; created_at?: string | null; published_at?: string | null }): string {
+  const dateStr = post.published_at || post.created_at;
+  if (post.slug && dateStr) {
+    // نستخدم نفس صيغة /YYYY/MM/DD/slug بتوقيت اليمن — لتطابق canonical مع الرابط الفعلي
+    return getPostUrl(post.slug, dateStr);
+  }
   return `${SITE_URL}/article/${post.slug || post.id}`;
 }
 
