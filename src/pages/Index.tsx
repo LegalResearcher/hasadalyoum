@@ -4,6 +4,7 @@ import HeroSlider from "@/components/news/HeroSlider";
 import NewsSection from "@/components/news/NewsSection";
 import MostRead from "@/components/news/MostRead";
 import AdSlot from "@/components/news/AdSlot";
+import CurrencyGoldPrices from "@/components/news/CurrencyGoldPrices";
 import { SITE_NAME, SITE_URL, SITE_LOGO } from "@/lib/seoHelpers";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useQuery } from "@tanstack/react-query";
@@ -97,6 +98,9 @@ const Index = () => {
 
       {/* إعلان أعلى الصفحة */}
       <AdSlot position="header" className="mb-10" />
+
+      {/* قسم أسعار العملات والذهب */}
+      <CurrencyGoldPrices />
 
       {/* الأقسام الديناميكية — تُعرض فقط إذا كان show_in_home = true في لوحة التحكم */}
       {homeCategories.map((cat) =>
