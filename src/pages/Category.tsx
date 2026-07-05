@@ -15,7 +15,7 @@ const Category = () => {
 
   const { data: category, isLoading: categoryLoading } = useCategoryBySlug(slug || "");
   const { data: categorySettings } = useCategorySettingsBySlug(slug || "");
-  const postsLimit = categorySettings?.posts_per_page || 24;
+  const postsLimit = 10;
   const displayStyle = categorySettings?.display_style || "grid";
 
   // إعادة ضبط رقم الصفحة عند تغيير القسم (نفس منطق الجنوب فويس)
@@ -44,7 +44,7 @@ const Category = () => {
         )
         .eq("category_id", category.id)
         .eq("status", "published")
-        .order("published_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .range(from, to);
 
       if (error) throw error;
