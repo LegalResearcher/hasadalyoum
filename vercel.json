@@ -1,9 +1,55 @@
 {
+  "redirects": [
+    {
+      "source": "/post/:id",
+      "destination": "/api/post-redirect?id=:id",
+      "permanent": true
+    }
+  ],
+
   "rewrites": [
     {
       "source": "/rss.xml",
       "destination": "/api/rss"
     },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/sitemap-news.xml",
+      "destination": "/api/sitemap-news"
+    },
+
+    {
+      "source": "/share/:id",
+      "destination": "/api/share?id=:id"
+    },
+
+    {
+      "source": "/",
+      "destination": "/api/news?type=home",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Twitterbot|TelegramBot|WhatsApp|LinkedInBot|Slackbot|Discordbot|Googlebot|bingbot).*"
+        }
+      ]
+    },
+
+    {
+      "source": "/:year(\\d{4})/:month(\\d{2})/:day(\\d{2})/:slug",
+      "destination": "/api/news?year=:year&month=:month&day=:day&slug=:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Twitterbot|TelegramBot|WhatsApp|LinkedInBot|Slackbot|Discordbot|Googlebot|bingbot|python|curl|Java|okhttp|axios|libwww).*"
+        }
+      ]
+    },
+
     {
       "source": "/(.*)",
       "destination": "/index.html"
