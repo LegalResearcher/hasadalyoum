@@ -1,12 +1,14 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import DOMPurify from "dompurify";
 import Layout from "@/components/layout/Layout";
-import { usePostBySlug, useIncrementPostView, useMostReadPosts, usePosts } from "@/hooks/usePosts";
+import { usePostBySlug, useIncrementPostView, useMostReadPosts } from "@/hooks/usePosts";
+import type { Post } from "@/hooks/usePosts";
 import NewsCard from "@/components/news/NewsCard";
 import VideoEmbed from "@/components/news/VideoEmbed";
-import AdSlot from "@/components/news/AdSlot";
 import { Facebook, Copy, MessageCircle, Send, Share2, Clock, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -25,10 +27,77 @@ const Article = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: article, isLoading } = usePostBySlug(slug || "");
   const incrementView = useIncrementPostView();
-  const { data: relatedPostsRaw } = usePosts({
-    categorySlug: article?.category?.slug,
-    limit: 7,
+
+  // ===== الأخبار ذات الصلة — نفس منطق الجنوب فويس حرفياً =====
+  // أولوية للأخبار من نفس القسم ونفس اليوم، ثم استكمال العدد بالأحدث
+  const { data: relatedPosts = [] } = useQuery({
+    queryKey: ["related-posts", article?.id, article?.category_id, article?.created_at],
+    queryFn: async () => {
+      const limit = 6;
+      const selectFields = `*, category:categories(id, name, slug), author:authors(id, name, avatar_url)`;
+      let sameDayPosts: Post[] = [];
+
+      // 1. محاولة جلب أخبار من نفس القسم ونفس اليوم
+      if (article!.created_at) {
+        const date = new Date(article!.created_at);
+        const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0).toISOString();
+        const endDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59).toISOString();
+
+        const { data: sameDayData, error: sameDayError } = await supabase
+          .from("posts")
+          .select(selectFields)
+          .eq("category_id", article!.category_id)
+          .eq("status", "published")
+          .neq("id", article!.id)
+          .gte("created_at", startDate)
+          .lte("created_at", endDate)
+          .order("created_at", { ascending: false })
+          .limit(limit);
+
+        if (sameDayError) throw sameDayError;
+        sameDayPosts = (sameDayData || []) as Post[];
+      }
+
+      if (sameDayPosts.length >= limit) {
+        return sameDayPosts.slice(0, limit);
+      }
+
+      // 2. استكمال العدد بأحدث أخبار نفس القسم
+      const excludeIds = [article!.id, ...sameDayPosts.map((p) => p.id)];
+      const remainingCount = limit - sameDayPosts.length;
+
+      const { data: latestData, error: latestError } = await supabase
+        .from("posts")
+        .select(selectFields)
+        .eq("category_id", article!.category_id)
+        .eq("status", "published")
+        .not("id", "in", `(${excludeIds.join(",")})`)
+        .order("created_at", { ascending: false })
+        .limit(remainingCount);
+
+      if (latestError) throw latestError;
+
+      return [...sameDayPosts, ...((latestData || []) as Post[])];
+    },
+    enabled: !!article?.id && !!article?.category_id,
   });
+
+  // ===== الوسائط الإضافية للخبر — نفس منطق الجنوب فويس =====
+  const { data: additionalMedia = [] } = useQuery({
+    queryKey: ["post-media", article?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("post_media")
+        .select("*")
+        .eq("post_id", article!.id)
+        .order("display_order", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!article?.id,
+  });
+
   const { data: mostReadPosts } = useMostReadPosts(6);
 
   // ===== تحديث المشاهدات (مرة واحدة per session) — نفس منطق الجنوب =====
@@ -176,7 +245,7 @@ const Article = () => {
     );
   }
 
-  const filteredRelated = (relatedPostsRaw || [])
+  const filteredRelated = (relatedPosts || [])
     .filter((p) => p.id !== article.id)
     .slice(0, 6);
 
@@ -409,7 +478,24 @@ const Article = () => {
         </div>
       </article>
 
-      <AdSlot position="in-article" className="my-6 md:my-8" />
+      {/* معرض الوسائط الإضافية — نفس منطق الجنوب فويس */}
+      {additionalMedia.length > 0 && (
+        <div className="mt-8 space-y-6">
+          <div className="grid grid-cols-1 gap-6">
+            {additionalMedia.map((media) => (
+              <div key={media.id} className="rounded-xl overflow-hidden border border-border shadow-md bg-card p-2">
+                {media.media_type === "video" || media.media_url.match(/\.(mp4|mov|webm)$/i) ? (
+                  <video src={media.media_url} controls className="w-full max-h-[500px] object-contain bg-black rounded-lg">
+                    المتصفح لا يدعم تشغيل الفيديو
+                  </video>
+                ) : (
+                  <img src={media.media_url} alt="" className="w-full h-auto object-cover rounded-lg" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ===== 14: أخبار ذات صلة — حرفياً كالجنوب فويس ===== */}
       {filteredRelated.length > 0 && (
