@@ -126,7 +126,12 @@ const Article = () => {
       month: "long",
       day: "numeric",
     });
-    return `${days[date.getDay()]} – ${dateFormatted}`;
+    const timeFormatted = date.toLocaleTimeString("ar-YE", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return `${days[date.getDay()]} – ${dateFormatted} – ${timeFormatted}`;
   };
 
   // ===== روابط المشاركة =====
