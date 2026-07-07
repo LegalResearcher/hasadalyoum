@@ -279,7 +279,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
       // Build relationships for hyperlinks
       const rels = posts.map((p, i) => `<Relationship Id="rId${100 + i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escapeXml(getPostUrl(p.slug || "", (p as any).published_at || (p as any).created_at || ""))}" TargetMode="External"/>`).join("");
 
-      // Reusable XML fragments matching the Aljanoubvoice reference template
+      // Reusable XML fragments matching the Hasad Al-Youm reference template
       const FONT = `<w:rFonts w:ascii="Arial" w:cs="Arial" w:eastAsia="Arial" w:hAnsi="Arial"/>`;
       const BORDER = `<w:top w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/><w:left w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/><w:right w:val="single" w:sz="4" w:space="0" w:color="cbd5e1"/>`;
       const HEAD_MAR = `<w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="140" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="140" w:type="dxa"/></w:tcMar>`;
