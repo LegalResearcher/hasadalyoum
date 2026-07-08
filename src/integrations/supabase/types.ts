@@ -753,7 +753,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_system_logs: { Args: never; Returns: Json }
       generate_slug: { Args: { title: string }; Returns: string }
+      get_system_logs_counts: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
