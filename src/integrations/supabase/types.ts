@@ -755,11 +755,18 @@ export type Database = {
     Functions: {
       cleanup_system_logs: { Args: never; Returns: Json }
       generate_slug: { Args: { title: string }; Returns: string }
+      get_bot_existing_source_urls: {
+        Args: never
+        Returns: {
+          source_url: string
+        }[]
+      }
       get_bot_post_status: {
         Args: { _post_id: string }
         Returns: {
           created_at: string
           found: boolean
+          id: string
           slug: string
           status: string
         }[]
