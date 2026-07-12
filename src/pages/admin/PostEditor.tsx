@@ -193,7 +193,13 @@ const OPENING_PHRASES = [
 const DRAFT_KEY = "hasad_draft_new";
 
 function formatParagraphs(text: string): string {
-  return text.replace(/([.!؟?])\s+/g, "$1\n").replace(/\n{3,}/g, "\n\n").trim();
+  if (!text) return text;
+  return text
+    .replace(/([.؟!])\s*/g, "$1\n")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join("\n");
 }
 
 const PostEditor = () => {
