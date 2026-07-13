@@ -224,6 +224,11 @@
   @apply rounded-lg my-4;
 }
 
+/* ✅ تنسيق متن الخبر - نفس معايير الجنوب فويس (يجعل \n يظهر كسطر جديد فعلي) */
+.article-body {
+  white-space: pre-wrap;
+}
+
 /* منع أي تفاعل عند الضغط على صور الخبر (لا فتح، لا تكبير، لا نقر) */
 .article-body img,
 .article-body a:has(img) {
