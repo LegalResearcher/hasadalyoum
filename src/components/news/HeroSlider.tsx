@@ -13,7 +13,7 @@ const HeroSlider = () => {
       id: "1",
       title: "مرحباً بكم في حصاد اليوم - منبر إعلامي يمني حر ومستقل",
       slug: "#",
-      featured_image: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200",
+      featured_image: "/logo.png",
       category: { name: "أخبار محلية", slug: "local-news" },
     },
   ];
@@ -52,7 +52,7 @@ const HeroSlider = () => {
           )}
         >
           <img
-            src={slide.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1200"}
+            src={slide.featured_image || "/logo.png"}
             alt={slide.title}
             className="w-full h-full object-cover"
           />
