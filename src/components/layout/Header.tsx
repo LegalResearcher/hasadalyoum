@@ -59,16 +59,8 @@ const Header = () => {
             </div>
           </Link>
 
-          {/* زر الدخول — desktop فقط */}
-          <Link
-            to="/auth"
-            className="shrink-0 hidden md:inline-flex items-center px-4 py-2 text-xs font-cairo font-semibold tracking-widest uppercase border border-foreground/80 hover:bg-foreground hover:text-background transition-colors order-3"
-          >
-            دخول
-          </Link>
-
-          {/* موازنة التخطيط على الموبايل */}
-          <div className="w-9 md:hidden order-3" />
+          {/* موازنة التخطيط */}
+          <div className="w-9 order-3" />
         </div>
       </div>
     </header>
