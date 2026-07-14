@@ -344,16 +344,29 @@ const Article = () => {
 
         {/* صورة الخبر */}
         {article.featured_image && (
-          <div className="aspect-video">
-            <img
-              src={article.featured_image}
-              alt={article.title}
-              className="w-full h-full object-cover"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-            />
-          </div>
+          article.featured_image.includes("logo.png") ? (
+            <div className="aspect-video bg-muted flex items-center justify-center p-8">
+              <img
+                src={article.featured_image}
+                alt={article.title}
+                className="max-w-[220px] max-h-full w-auto h-auto object-contain"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
+            </div>
+          ) : (
+            <div className="aspect-video">
+              <img
+                src={article.featured_image}
+                alt={article.title}
+                className="w-full h-full object-cover"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
+              />
+            </div>
+          )
         )}
 
         {/* فيديو */}
