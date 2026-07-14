@@ -539,7 +539,7 @@ const Article = () => {
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-muted">
                   <img
-                    src={post.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400"}
+                    src={post.featured_image || "/logo.png"}
                     alt={post.title}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     loading="lazy"
