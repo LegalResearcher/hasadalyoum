@@ -55,7 +55,7 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
       >
         <div className="w-24 h-20 sm:w-32 sm:h-24 flex-shrink-0 overflow-hidden bg-muted">
           <img
-            src={post.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400"}
+            src={post.featured_image || "/logo.png"}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -78,7 +78,7 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
       <Link to={`/article/${post.slug}`} className="block group">
         <div className="relative aspect-[4/3] overflow-hidden mb-3 bg-muted">
           <img
-            src={post.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400"}
+            src={post.featured_image || "/logo.png"}
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
@@ -101,7 +101,7 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted">
         <img
-          src={post.featured_image || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400"}
+          src={post.featured_image || "/logo.png"}
           alt={post.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
