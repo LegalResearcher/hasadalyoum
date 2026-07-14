@@ -395,10 +395,10 @@ const Article = () => {
 
           {/* صور إضافية للخبر */}
           {Array.isArray((article as any).gallery_images) && (article as any).gallery_images.length > 0 && (
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="mt-8 grid grid-cols-2 gap-3">
               {(article as any).gallery_images.map((url: string, idx: number) => (
-                <div key={idx} className="aspect-video rounded-lg overflow-hidden border border-border">
-                  <img src={url} alt={`${article.title} - صورة ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                <div key={idx} className="rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                  <img src={url} alt={`${article.title} - صورة ${idx + 1}`} className="w-full h-auto object-contain" loading="lazy" />
                 </div>
               ))}
             </div>
