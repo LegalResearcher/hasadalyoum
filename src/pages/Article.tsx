@@ -393,6 +393,17 @@ const Article = () => {
             />
           )}
 
+          {/* صور إضافية للخبر */}
+          {Array.isArray((article as any).gallery_images) && (article as any).gallery_images.length > 0 && (
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-3 gap-3">
+              {(article as any).gallery_images.map((url: string, idx: number) => (
+                <div key={idx} className="aspect-video rounded-lg overflow-hidden border border-border">
+                  <img src={url} alt={`${article.title} - صورة ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* بطاقة الكاتب التفصيلية (E-E-A-T) */}
           {article.author && (
             <div className="mt-10 p-5 md:p-6 bg-background rounded-2xl border border-border overflow-hidden relative">
