@@ -48,11 +48,11 @@ const MostRead = ({ limit = 6, showHeading = true }: MostReadProps) => {
             to={`/article/${post.slug}`}
             className="group relative bg-card rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-border overflow-hidden"
           >
-            <div className="relative aspect-[16/9] overflow-hidden bg-muted">
+            <div className="relative aspect-[16/9] overflow-hidden bg-muted flex items-center justify-center">
               <img
                 src={post.featured_image || "/logo.png"}
                 alt={post.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                className={post.featured_image ? "w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" : "w-1/2 h-1/2 object-contain"}
                 loading="lazy"
               />
               <div
