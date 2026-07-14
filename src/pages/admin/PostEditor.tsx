@@ -264,6 +264,7 @@ const PostEditor = () => {
     excerpt: "",
     content: "",
     featured_image: "",
+    gallery_images: [] as string[],
     category_id: "",
     author_id: "",
     status: "draft" as "draft" | "published" | "scheduled" | "hidden" | "under_review",
@@ -306,6 +307,7 @@ const PostEditor = () => {
         excerpt: post.excerpt || "",
         content: post.content || "",
         featured_image: post.featured_image || "",
+        gallery_images: (post as any).gallery_images || [],
         category_id: post.category_id || "",
         author_id: post.author_id || "",
         status: post.status || "draft",
@@ -657,6 +659,41 @@ const PostEditor = () => {
     finally { setIsUploadingImage(false); }
   };
 
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setIsUploadingGallery(true);
+    try {
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        let fileToUpload: Blob = file;
+        let fileName: string;
+        let contentType = file.type;
+        if (isOptimizableImage(file)) {
+          const optimized = await optimizeImage(file);
+          fileToUpload = optimized.blob; contentType = "image/webp"; fileName = `gallery-${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
+        } else {
+          fileName = `gallery-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split(".").pop()}`;
+        }
+        const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, fileToUpload, { contentType });
+        if (uploadError) { toast.error(translateError(uploadError)); continue; }
+        const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
+        uploadedUrls.push(urlData.publicUrl);
+      }
+      if (uploadedUrls.length) {
+        setFormData(prev => ({ ...prev, gallery_images: [...prev.gallery_images, ...uploadedUrls] }));
+        toast.success(`تم رفع ${uploadedUrls.length} صورة بنجاح`);
+      }
+    } catch (error: any) { toast.error(translateError(error)); }
+    finally { setIsUploadingGallery(false); e.target.value = ""; }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setFormData(prev => ({ ...prev, gallery_images: prev.gallery_images.filter((_, i) => i !== index) }));
+  };
+
   if (!isNew && postLoading) {
     return <AdminLayout><div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></AdminLayout>;
   }
@@ -831,6 +868,28 @@ const PostEditor = () => {
                   )}
                   <Input value={formData.featured_image} onChange={(e) => setFormData(p => ({ ...p, featured_image: e.target.value }))} placeholder="أو أدخل رابط الصورة" dir="ltr" />
                 </div>
+
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>صور إضافية للخبر</Label>
+                  {formData.gallery_images.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {formData.gallery_images.map((url, idx) => (
+                        <div key={idx} className="relative group">
+                          <img src={url} alt={`صورة ${idx + 1}`} className="w-full h-20 object-cover rounded-lg border" />
+                          <button
+                            type="button"
+                            onClick={() => removeGalleryImage(idx)}
+                            className="absolute top-1 left-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-90 hover:opacity-100"
+                          >×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <Input type="file" accept="image/*" multiple onChange={handleGalleryUpload} disabled={isUploadingGallery} />
+                  {isUploadingGallery && <p className="text-xs text-muted-foreground">جاري رفع الصور...</p>}
+                  <p className="text-xs text-gray-400">يمكنك اختيار عدة صور دفعة واحدة، ستظهر مع الخبر</p>
+                </div>
+
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2"><Video className="h-4 w-4" /> رابط فيديو خارجي</Label>
                   <Input value={formData.external_video_url} onChange={(e) => setFormData(p => ({ ...p, external_video_url: e.target.value }))}
