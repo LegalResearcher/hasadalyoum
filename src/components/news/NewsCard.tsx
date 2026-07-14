@@ -53,11 +53,11 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
         to={`/article/${post.slug}`}
         className="flex gap-3 md:gap-4 group py-3 border-b border-border last:border-0"
       >
-        <div className="w-24 h-20 sm:w-32 sm:h-24 flex-shrink-0 overflow-hidden bg-muted">
+        <div className="w-24 h-20 sm:w-32 sm:h-24 flex-shrink-0 overflow-hidden bg-muted flex items-center justify-center">
           <img
             src={post.featured_image || "/logo.png"}
             alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className={post.featured_image ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
           />
         </div>
         <div className="flex-1">
@@ -76,11 +76,11 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
   if (variant === "small") {
     return (
       <Link to={`/article/${post.slug}`} className="block group">
-        <div className="relative aspect-[4/3] overflow-hidden mb-3 bg-muted">
+        <div className="relative aspect-[4/3] overflow-hidden mb-3 bg-muted flex items-center justify-center">
           <img
             src={post.featured_image || "/logo.png"}
             alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className={post.featured_image ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
           />
         </div>
         {post.category && (
@@ -99,11 +99,11 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
       to={`/article/${post.slug}`}
       className="block group"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-muted">
+      <div className="relative aspect-[16/10] overflow-hidden bg-muted flex items-center justify-center">
         <img
           src={post.featured_image || "/logo.png"}
           alt={post.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className={post.featured_image ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
         />
       </div>
       <div className="pt-3 md:pt-4">
