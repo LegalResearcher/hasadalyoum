@@ -36,7 +36,7 @@ const TopFeatured = () => {
             <img
               src={
                 lead.featured_image ||
-                "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=1400"
+                "/logo.png"
               }
               alt={lead.title}
               className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
@@ -72,7 +72,7 @@ const TopFeatured = () => {
                 <img
                   src={
                     p.featured_image ||
-                    "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600"
+                    "/logo.png"
                   }
                   alt={p.title}
                   className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
