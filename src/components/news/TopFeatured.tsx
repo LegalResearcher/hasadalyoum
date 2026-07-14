@@ -32,14 +32,14 @@ const TopFeatured = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
         {/* Lead story */}
         <Link to={`/article/${lead.slug}`} className="lg:col-span-2 group block">
-          <div className="relative aspect-[16/10] overflow-hidden bg-muted mb-5">
+          <div className="relative aspect-[16/10] overflow-hidden bg-muted mb-5 flex items-center justify-center">
             <img
               src={
                 lead.featured_image ||
                 "/logo.png"
               }
               alt={lead.title}
-              className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+              className={lead.featured_image ? "w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700" : "w-1/2 h-1/2 object-contain"}
             />
           </div>
           {lead.category && (
@@ -68,14 +68,14 @@ const TopFeatured = () => {
               to={`/article/${p.slug}`}
               className={`group block ${i === 0 ? "pb-5" : "py-5"}`}
             >
-              <div className="relative aspect-[16/10] overflow-hidden bg-muted mb-3">
+              <div className="relative aspect-[16/10] overflow-hidden bg-muted mb-3 flex items-center justify-center">
                 <img
                   src={
                     p.featured_image ||
                     "/logo.png"
                   }
                   alt={p.title}
-                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+                  className={p.featured_image ? "w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700" : "w-1/2 h-1/2 object-contain"}
                 />
               </div>
               {p.category && (
