@@ -54,7 +54,7 @@ const HeroSlider = () => {
           <img
             src={slide.featured_image || "/logo.png"}
             alt={slide.title}
-            className="w-full h-full object-cover"
+            className={slide.featured_image && slide.featured_image !== "/logo.png" ? "w-full h-full object-cover" : "w-full h-full object-contain bg-muted p-10"}
           />
           <div className="absolute inset-0" style={{ background: "var(--overlay-gradient)" }} />
           <div className="absolute bottom-0 right-0 left-0 p-5 sm:p-8 md:p-12">
