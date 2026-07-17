@@ -207,11 +207,13 @@ const Article = () => {
   const shareTitle = article?.title || "";
   const fullShareText = `${shareTitle}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${SHARE_URL}${SOCIAL_SIGNATURE}`;
   const telegramShareText = `${shareTitle}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${SHARE_URL}\n\n📲 تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
+  const shareSummary = article?.excerpt || "";
+  const twitterShareText = `${shareTitle}${shareSummary ? `\n\n${shareSummary}` : ""}\n\n📲 تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
 
   const shareOnFacebook = () =>
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}`, "_blank");
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}&quote=${encodeURIComponent(fullShareText)}`, "_blank");
   const shareOnX = () =>
-    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(SHARE_URL)}&text=${encodeURIComponent(shareTitle)}`, "_blank");
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterShareText)}`, "_blank");
   const shareOnWhatsApp = () =>
     window.open(`https://wa.me/?text=${encodeURIComponent(fullShareText)}`, "_blank");
   const shareOnTelegram = () =>
