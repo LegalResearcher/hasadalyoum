@@ -208,7 +208,7 @@ const Article = () => {
   const fullShareText = `${shareTitle}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${SHARE_URL}${SOCIAL_SIGNATURE}`;
   const telegramShareText = `${shareTitle}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${SHARE_URL}\n\n📲 تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
   const shareSummary = article?.excerpt || "";
-  const twitterShareText = `${shareTitle}${shareSummary ? `\n\n${shareSummary}` : ""}\n\n📲 تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
+  const twitterShareText = `${shareSummary}\n\n📲 تفاصيل تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
 
   const shareOnFacebook = () =>
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}&quote=${encodeURIComponent(fullShareText)}`, "_blank");
