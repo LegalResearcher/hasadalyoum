@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { translateError } from "@/lib/errorTranslator";
 import { optimizeImage, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
 import { applyWatermark, generateWatermarkPreview } from "@/lib/imageWatermark";
+import { applyHeadlineDesign, generateHeadlineDesignPreview } from "@/lib/imageHeadlineDesign";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { generateMetaTitle, generateSEOSlug, extractSEOKeywords, pingSearchEngines } from "@/lib/seoHelpers";
 import { getPostUrl } from "@/lib/postUrl";
@@ -216,6 +217,9 @@ const PostEditor = () => {
   const [enableWatermark, setEnableWatermark] = useState(false);
   const [watermarkPreview, setWatermarkPreview] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  // نوع العلامة: 'corner' = شعار صغير بالزاوية (القديم) — 'headline' = شريط
+  // العنوان السفلي (شعار + اسم الموقع + عنوان الخبر)، نفس تصميم البوت التلقائي
+  const [watermarkStyle, setWatermarkStyle] = useState<'corner' | 'headline'>('headline');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
@@ -449,20 +453,56 @@ const PostEditor = () => {
     }
   };
 
+  // ينتج معاينة الصورة حسب الأسلوب المختار (شعار بالزاوية أو شريط العنوان)
+  const buildWatermarkPreview = async (imageUrl: string): Promise<string> => {
+    if (watermarkStyle === 'headline') {
+      const headlineText = (formData.title || '').trim();
+      if (!headlineText) {
+        throw new Error('أدخل عنوان الخبر أولاً لتوليد شريط العنوان');
+      }
+      return generateHeadlineDesignPreview(imageUrl, watermarkLogoUrl, headlineText);
+    }
+    return generateWatermarkPreview(imageUrl, watermarkLogoUrl);
+  };
+
   // Watermark preview
   const handleWatermarkToggle = async (checked: boolean) => {
     setEnableWatermark(checked);
     if (checked && formData.featured_image && watermarkLogoUrl) {
       setIsGeneratingPreview(true);
       try {
-        const preview = await generateWatermarkPreview(formData.featured_image, watermarkLogoUrl);
+        const preview = await buildWatermarkPreview(formData.featured_image);
         setWatermarkPreview(preview);
-      } catch {
-        toast.error("فشل في إنشاء معاينة العلامة المائية");
+      } catch (error: any) {
+        toast.error(error?.message || "فشل في إنشاء معاينة العلامة المائية");
         setEnableWatermark(false);
       } finally { setIsGeneratingPreview(false); }
     } else { setWatermarkPreview(null); }
   };
+
+  // Regenerate preview when image changes while watermark is enabled
+  const regenerateWatermarkPreview = async (imageUrl: string) => {
+    if (enableWatermark && imageUrl && watermarkLogoUrl) {
+      setIsGeneratingPreview(true);
+      try {
+        const preview = await buildWatermarkPreview(imageUrl);
+        setWatermarkPreview(preview);
+      } catch (error) {
+        console.error('Failed to regenerate watermark preview:', error);
+      } finally { setIsGeneratingPreview(false); }
+    }
+  };
+
+  // إعادة توليد معاينة شريط العنوان تلقائياً عند تعديل عنوان الخبر (بعد
+  // توقف الكتابة بثانية واحدة) — لأن التصميم يعتمد على نص العنوان مباشرة
+  useEffect(() => {
+    if (!enableWatermark || watermarkStyle !== 'headline' || !formData.featured_image) return;
+    const timeout = setTimeout(() => {
+      regenerateWatermarkPreview(formData.featured_image);
+    }, 1000);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.title, watermarkStyle, enableWatermark]);
 
   const isValidUUID = (str?: string) =>
     !!str && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
@@ -513,15 +553,18 @@ const PostEditor = () => {
       // العلامة المائية: رفع صورة منفصلة عند الحفظ وحفظ URL الجديد
       let finalImageUrl = rest.featured_image;
       if (enableWatermark && rest.featured_image && watermarkLogoUrl) {
+        const usingHeadline = watermarkStyle === 'headline';
         try {
-          toast.info("جاري إنشاء صورة المشاركة مع العلامة المائية...");
-          const wm = await applyWatermark(rest.featured_image, watermarkLogoUrl);
+          toast.info(usingHeadline ? "جاري تصميم صورة الخبر بشريط العنوان..." : "جاري إنشاء صورة المشاركة مع العلامة المائية...");
+          const wm = usingHeadline
+            ? await applyHeadlineDesign(rest.featured_image, watermarkLogoUrl, (rest.title || '').trim())
+            : await applyWatermark(rest.featured_image, watermarkLogoUrl);
           const wmFileName = `og-${Math.random().toString(36).substring(2)}-${Date.now()}.webp`;
           const { error: wmErr } = await supabase.storage.from("post-images").upload(wmFileName, wm.blob, { contentType: "image/webp" });
           if (!wmErr) {
             const { data: wmUrl } = supabase.storage.from("post-images").getPublicUrl(wmFileName);
             finalImageUrl = wmUrl.publicUrl;
-            toast.success("تم إنشاء صورة المشاركة بنجاح");
+            toast.success(usingHeadline ? "تم تصميم صورة الخبر بنجاح" : "تم إنشاء صورة المشاركة بنجاح");
           } else {
             toast.error("فشل رفع صورة العلامة المائية، سيتم استخدام الصورة الأصلية");
           }
@@ -642,18 +685,15 @@ const PostEditor = () => {
         toast.success(`تم ضغط الصورة: ${formatFileSize(optimized.originalSize)} ← ${formatFileSize(optimized.optimizedSize)}`);
       } else { fileName = `${Date.now()}.${file.name.split(".").pop()}`; }
 
-      if (enableWatermark && watermarkLogoUrl) {
-        try {
-          toast.info("جاري إضافة العلامة المائية...");
-          const wm = await applyWatermark(fileToUpload, watermarkLogoUrl);
-          fileToUpload = wm.blob; fileName = `wm-${Date.now()}.webp`; contentType = "image/webp";
-        } catch { toast.error("فشلت إضافة العلامة المائية، سيتم رفع الصورة بدونها"); }
-      }
+      // ⚠️ لا تُطبَّق العلامة/شريط العنوان هنا وقت الرفع — تُطبَّق مرة واحدة فقط
+      // عند الحفظ النهائي (saveMutation) لتفادي تكرار العلامة على نفس الصورة.
+      // هنا فقط نرفع الصورة الأصلية (أو المضغوطة)، ونحدّث معاينة العلامة إن كانت مفعّلة.
 
       const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, fileToUpload, { contentType });
       if (uploadError) { toast.error(translateError(uploadError)); return; }
       const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
       setFormData(prev => ({ ...prev, featured_image: urlData.publicUrl }));
+      if (enableWatermark) regenerateWatermarkPreview(urlData.publicUrl);
       toast.success("تم رفع الصورة بنجاح");
     } catch (error: any) { toast.error(translateError(error)); }
     finally { setIsUploadingImage(false); }
@@ -853,16 +893,38 @@ const PostEditor = () => {
                         <p className="text-xs font-semibold text-blue-800 flex items-center gap-1.5">
                           <ImageIcon className="h-3.5 w-3.5" /> إضافة علامة مائية احترافية
                         </p>
-                        <p className="text-xs text-blue-500 mt-0.5">تُضاف شعار الموقع تلقائياً على الصورة</p>
+                        <p className="text-xs text-blue-500 mt-0.5">
+                          {watermarkStyle === 'headline'
+                            ? "شريط سفلي فيه شعار الموقع + اسمه + عنوان الخبر (نفس تصميم البوت التلقائي)"
+                            : "شعار الموقع فقط بزاوية الصورة"}
+                        </p>
                       </div>
                       {isGeneratingPreview && <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />}
                     </label>
                   )}
+                  {enableWatermark && (
+                    <div className="flex gap-2 px-1">
+                      <button
+                        type="button"
+                        onClick={() => { setWatermarkStyle('headline'); if (formData.featured_image) regenerateWatermarkPreview(formData.featured_image); }}
+                        className={`flex-1 text-xs font-semibold py-2 rounded-lg border transition-colors ${watermarkStyle === 'headline' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50'}`}
+                      >
+                        شريط العنوان
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setWatermarkStyle('corner'); if (formData.featured_image) regenerateWatermarkPreview(formData.featured_image); }}
+                        className={`flex-1 text-xs font-semibold py-2 rounded-lg border transition-colors ${watermarkStyle === 'corner' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50'}`}
+                      >
+                        شعار الزاوية فقط
+                      </button>
+                    </div>
+                  )}
                   {enableWatermark && watermarkPreview && (
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold text-gray-600">معاينة مع الشعار:</p>
+                      <p className="text-xs font-semibold text-gray-600">معاينة الصورة النهائية:</p>
                       <div className="rounded-xl overflow-hidden border border-blue-200 shadow-sm">
-                        <img src={watermarkPreview} alt="معاينة العلامة المائية" className="w-full" style={{ aspectRatio: '1200/630' }} />
+                        <img src={watermarkPreview} alt="معاينة الصورة" className="w-full" style={{ aspectRatio: '1200/630' }} />
                       </div>
                     </div>
                   )}
