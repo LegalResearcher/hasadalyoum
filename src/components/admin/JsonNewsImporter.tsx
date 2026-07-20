@@ -500,7 +500,7 @@ const JsonNewsImporter = () => {
         try {
           await fetch("/api/ping-sitemap", { method: "GET" }).catch(() => {});
           await fetch(
-            `https://www.google.com/ping?sitemap=${encodeURIComponent("https://hasadalyoum.com/sitemap.xml")}`,
+            `https://www.google.com/ping?sitemap=${encodeURIComponent("https://hasad-alyoum.com/sitemap.xml")}`,
             { mode: "no-cors" }
           );
         } catch { /* silent */ }
