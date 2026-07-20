@@ -142,7 +142,7 @@ export function generateNewsArticleSchema(post: SchemaPost) {
       "@type": "Organization",
       name: SITE_NAME,
       url: SITE_URL,
-      logo: { "@type": "ImageObject", url: SITE_LOGO, width: 487, height: 487 },
+      logo: { "@type": "ImageObject", url: SITE_LOGO, width: 512, height: 512 },
     },
     articleSection: post.category?.name || "أخبار",
     inLanguage: "ar",
