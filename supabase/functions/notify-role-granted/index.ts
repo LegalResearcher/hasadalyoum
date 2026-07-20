@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
               </tr>
             </table>
             <p>يمكنك الآن تسجيل الدخول والبدء في استخدام لوحة التحكم:</p>
-            <a href="https://hasadalyoum.vercel.app/admin" 
+            <a href="https://www.hasad-alyoum.com/admin" 
                style="display: inline-block; background: #1e3a8a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0;">
               الذهاب إلى لوحة التحكم
             </a>
