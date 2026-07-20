@@ -2,7 +2,7 @@
  * رابط الموقع الرسمي — يُستخدم في sitemap.xml، تصدير HTML/Word،
  * وكل ما يحتاج رابطاً مطلقاً بصيغة /YYYY/MM/DD/slug بتوقيت اليمن
  */
-export const SITE_URL = "https://hasadalyoum.vercel.app";
+export const SITE_URL = "https://www.hasad-alyoum.com";
 
 // توقيت اليمن (Asia/Aden) — UTC+3 ثابت، لا يوجد توقيت صيفي
 const YEMEN_OFFSET_MS = 3 * 60 * 60 * 1000;
