@@ -177,7 +177,7 @@ const Settings = () => {
                 <Label className="flex items-center gap-2">
                   <Mail className="h-4 w-4" /> البريد الإلكتروني للإدارة
                 </Label>
-                <Input value={settings.contact_email} onChange={(e) => handleChange("contact_email", e.target.value)} placeholder="info@hasadalyoum.com" dir="ltr" />
+                <Input value={settings.contact_email} onChange={(e) => handleChange("contact_email", e.target.value)} placeholder="info@hasad-alyoum.com" dir="ltr" />
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
