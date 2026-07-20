@@ -615,7 +615,7 @@ const PostEditor = () => {
       }
 
       if (formData.status === "published") {
-        try { fetch("https://www.google.com/ping?sitemap=https://hasadalyoum.com/sitemap.xml", { mode: "no-cors" }); } catch { }
+        try { fetch("https://www.google.com/ping?sitemap=https://hasad-alyoum.com/sitemap.xml", { mode: "no-cors" }); } catch { }
       }
 
       return { postId, isNewPublish, slug: postData.slug || formData.slug };
@@ -638,7 +638,7 @@ const PostEditor = () => {
       if (isNewPublish && slug) {
         const postUrl = getPostUrl(slug, new Date().toISOString());
         // Ping sitemap لـ Google و Bing في الخلفية
-        pingSearchEngines("https://hasadalyoum.com/sitemap.xml")
+        pingSearchEngines("https://hasad-alyoum.com/sitemap.xml")
           .then((res) => console.log("Ping results:", res))
           .catch((err) => console.error("Ping failed:", err));
         // إرسال الرابط لـ Google Indexing API
@@ -976,14 +976,14 @@ const PostEditor = () => {
                     <p className="text-xs text-gray-500 mb-2">معاينة نتيجة البحث في Google:</p>
                     <div className="bg-white p-3 rounded border">
                       <p className="text-blue-700 text-lg hover:underline cursor-pointer truncate">{formData.meta_title || formData.title || "عنوان المقال"}</p>
-                      <p className="text-green-700 text-sm" dir="ltr">hasadalyoum.com/article/{formData.slug || "..."}</p>
+                      <p className="text-green-700 text-sm" dir="ltr">hasad-alyoum.com/article/{formData.slug || "..."}</p>
                       <p className="text-gray-600 text-sm mt-1 line-clamp-2">{formData.meta_description || formData.excerpt || "وصف المقال..."}</p>
                     </div>
                     <p className="text-xs text-gray-500 mt-4 mb-2">معاينة المشاركة على Facebook:</p>
                     <div className="bg-white rounded border overflow-hidden">
                       {formData.featured_image && <img src={formData.featured_image} alt="معاينة" className="w-full h-40 object-cover" />}
                       <div className="p-3 bg-gray-100">
-                        <p className="text-xs text-gray-500 uppercase">hasadalyoum.com</p>
+                        <p className="text-xs text-gray-500 uppercase">hasad-alyoum.com</p>
                         <p className="font-bold text-gray-900 truncate">{formData.meta_title || formData.title || "عنوان المقال"}</p>
                         <p className="text-sm text-gray-600 line-clamp-2">{formData.meta_description || formData.excerpt || "وصف المقال..."}</p>
                       </div>
