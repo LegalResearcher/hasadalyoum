@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import JSZip from "jszip";
 
-const SITE_URL = "https://hasadalyoum.com";
+const SITE_URL = "https://hasad-alyoum.com";
 const BRAND_COLOR = "#1B3A6B";
 const BRAND_COLOR_HEX = "1B3A6B";
 
@@ -259,7 +259,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
   <p>وتسهيلاً على الباحثين، والمتابعين، والإعلاميين، تُمثّل هذه المادة أرشيفاً رقمياً تفاعلياً وموثوقاً؛ يتيح للقارئ النقر على أي عنوان للانتقال مباشرةً والاطلاع على تفاصيل التغطية الكاملة.</p>
 </div>
 <table><thead><tr><th>#</th><th>العنوان</th><th>المشاهدات</th><th>التاريخ</th></tr></thead><tbody>${rows}</tbody></table>
-<div class="footer">© حصاد اليوم — جميع الحقوق محفوظة ${year} | hasadalyoum.com</div>
+<div class="footer">© حصاد اليوم — جميع الحقوق محفوظة ${year} | hasad-alyoum.com</div>
 </div></div></body></html>`;
       downloadText(html, `hasad-report-${Date.now()}.html`, "text/html");
       toast.success(`تم تصدير ${posts.length} خبر`);
@@ -340,7 +340,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
     </w:tr>
     ${tableRows}
   </w:tbl>
-  <w:p><w:pPr><w:spacing w:before="120" w:after="60"/><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="cbd5e1"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:rtl/></w:rPr><w:t xml:space="preserve">© حصاد اليوم — جميع الحقوق محفوظة ${year} | hasadalyoum.com</w:t></w:r></w:p>
+  <w:p><w:pPr><w:spacing w:before="120" w:after="60"/><w:jc w:val="center"/><w:bidi/></w:pPr><w:r><w:rPr>${FONT}<w:color w:val="cbd5e1"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:rtl/></w:rPr><w:t xml:space="preserve">© حصاد اليوم — جميع الحقوق محفوظة ${year} | hasad-alyoum.com</w:t></w:r></w:p>
   <w:sectPr><w:pgSz w:w="12240" w:h="15840" w:orient="portrait"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080" w:header="720" w:footer="720" w:gutter="0"/><w:bidi/></w:sectPr>
 </w:body>
 </w:document>`;
