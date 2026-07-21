@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
  * بدل الاعتماد على خريطة أسماء ثابتة كما في موقع الجنوب
  */
 
-const SITE_URL = process.env.SITE_URL || 'https://hasadalyoum.vercel.app';
+const SITE_URL = process.env.SITE_URL || 'https://hasad-alyoum.com';
 const SITE_NAME = 'حصاد اليوم';
 
 function escapeXml(str = '') {
