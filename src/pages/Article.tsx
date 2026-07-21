@@ -20,7 +20,7 @@ import {
 } from "@/lib/seoHelpers";
 
 // ===== التوقيع الثابت لقنوات التواصل =====
-const SOCIAL_SIGNATURE = `\n\n📲 تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
+const SOCIAL_SIGNATURE = `\n\n— حصاد اليوم\nانضم إلى قناتنا: https://t.me/hasadalyoum`;
 
 const Article = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -122,7 +122,7 @@ const Article = () => {
       const selection = window.getSelection();
       if (selection && selection.toString().length > 0) {
         const decodedUrl = decodeURIComponent(window.location.href);
-        const textWithSource = `${selection.toString()}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${decodedUrl}${SOCIAL_SIGNATURE}`;
+        const textWithSource = `"${SITE_NAME}" — ${selection.toString()}\n${decodedUrl}${SOCIAL_SIGNATURE}`;
         e.clipboardData?.setData("text/plain", textWithSource);
         e.preventDefault();
         toast.success("تم نسخ النص مع رابط المصدر والتوقيع");
@@ -205,10 +205,10 @@ const Article = () => {
   // ===== روابط المشاركة =====
   const SHARE_URL = article ? `${SITE_URL}/share/${article.id}` : "";
   const shareTitle = article?.title || "";
-  const fullShareText = `${shareTitle}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${SHARE_URL}${SOCIAL_SIGNATURE}`;
-  const telegramShareText = `${shareTitle}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${SHARE_URL}\n\n📲 تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
+  const fullShareText = `"${SITE_NAME}" — ${shareTitle}\n${SHARE_URL}${SOCIAL_SIGNATURE}`;
+  const telegramShareText = `${shareTitle}\n\nأقرأ التفاصيل من "${SITE_NAME}": ${SHARE_URL}`;
   const shareSummary = article?.excerpt || "";
-  const twitterShareText = `${shareSummary}\n\n📲 تفاصيل تابعونا على: ⤵\n\n✅ تيليجرام: https://t.me/hasadalyoum`;
+  const twitterShareText = `${shareSummary}\n\n${SHARE_URL}`;
 
   const shareOnFacebook = () =>
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(SHARE_URL)}&quote=${encodeURIComponent(fullShareText)}`, "_blank");
