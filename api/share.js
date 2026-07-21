@@ -7,7 +7,7 @@ const escapeHtml = (str) =>
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-const SITE_URL = "https://hasadalyoum.vercel.app";
+const SITE_URL = "https://hasad-alyoum.com";
 const SITE_NAME = "حصاد اليوم";
 
 export default async function handler(req, res) {
