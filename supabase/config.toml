@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.notify-role-granted]
 verify_jwt = false
+
+[functions.google-indexing]
+verify_jwt = false
