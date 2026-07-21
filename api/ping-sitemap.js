@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   try {
-    const sitemapUrl = "https://hasadalyoum.vercel.app/sitemap.xml";
-    const sitemapNewsUrl = "https://hasadalyoum.vercel.app/sitemap-news.xml";
+    const sitemapUrl = "https://hasad-alyoum.com/sitemap.xml";
+    const sitemapNewsUrl = "https://hasad-alyoum.com/sitemap-news.xml";
 
     // إرسال ping لجوجل من الـ server
     const [googleMain, googleNews] = await Promise.all([
