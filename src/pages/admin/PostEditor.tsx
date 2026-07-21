@@ -22,7 +22,7 @@ import { applyWatermark, generateWatermarkPreview } from "@/lib/imageWatermark";
 import { applyHeadlineDesign, generateHeadlineDesignPreview } from "@/lib/imageHeadlineDesign";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { generateMetaTitle, generateSEOSlug, extractSEOKeywords, pingSearchEngines } from "@/lib/seoHelpers";
-import { getPostUrl } from "@/lib/postUrl";
+import { getPostUrl, SITE_URL } from "@/lib/postUrl";
 
 // ── InternalLinkingSuggestions (inline) ──────────────────────────────────────
 import { useQuery as useQueryIL } from "@tanstack/react-query";
@@ -615,7 +615,7 @@ const PostEditor = () => {
       }
 
       if (formData.status === "published") {
-        try { fetch("https://www.google.com/ping?sitemap=https://hasad-alyoum.com/sitemap.xml", { mode: "no-cors" }); } catch { }
+        try { fetch(`https://www.google.com/ping?sitemap=${SITE_URL}/sitemap.xml`, { mode: "no-cors" }); } catch { }
       }
 
       return { postId, isNewPublish, slug: postData.slug || formData.slug };
@@ -638,7 +638,7 @@ const PostEditor = () => {
       if (isNewPublish && slug) {
         const postUrl = getPostUrl(slug, new Date().toISOString());
         // Ping sitemap لـ Google و Bing في الخلفية
-        pingSearchEngines("https://hasad-alyoum.com/sitemap.xml")
+        pingSearchEngines(`${SITE_URL}/sitemap.xml`)
           .then((res) => console.log("Ping results:", res))
           .catch((err) => console.error("Ping failed:", err));
         // إرسال الرابط لـ Google Indexing API
