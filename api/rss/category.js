@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
  * يُستدعى بالشكل: /api/rss/category?category=local-news (نفس slug المُستخدم في الموقع)
  */
 
-const SITE_URL = process.env.SITE_URL || 'https://hasadalyoum.vercel.app';
+const SITE_URL = process.env.SITE_URL || 'https://hasad-alyoum.com';
 
 function escapeXml(str = '') {
   return String(str)
