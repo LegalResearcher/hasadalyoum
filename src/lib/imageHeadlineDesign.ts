@@ -1,15 +1,19 @@
 /**
- * Headline Band Design Utility - South Voice
- * نفس منطق apply_headline_design_to_image() في janoub_news_bot.py حرفياً،
+ * أداة تصميم شريط العنوان - حصاد اليوم
+ * نفس منطق apply_headline_design_to_image() في hasad_news_bot_fixed.py حرفياً،
  * لكن بلغة Canvas API بدل Pillow. يُنتج صورة الخبر بنفس نسبة OG (1200×630)
- * مع شريط سفلي بخط علوي مستقيم (كحلي + خط حافة أحمر رفيع + تدرّج تعتيم
- * ناعم فوقه يذوب داخل الصورة الأصلية) فيه شعار الموقع + اسمه يسار الشريط،
- * وعنوان الخبر يمين الشريط. العنوان يظهر كاملاً دائماً بدون أي قص — الخط
- * يصغر تلقائياً والشريط يكبر تلقائياً عند الحاجة.
+ * مع شريط سفلي بخط علوي مستقيم (أسود فحمي + خط حافة ذهبي رفيع + تدرّج
+ * تعتيم ناعم فوقه يذوب داخل الصورة الأصلية) فيه شعار حصاد + اسمه يسار
+ * الشريط، وعنوان الخبر يمين الشريط. العنوان يظهر كاملاً دائماً بدون أي
+ * قص — الخط يصغر تلقائياً والشريط يكبر تلقائياً عند الحاجة.
  *
  * ⚠️ أي تعديل بالألوان/الأبعاد هنا لازم ينعكس بنفس القيم بملف
- * janoub_news_bot.py (الثوابت HEADLINE_* وWATERMARK_OG_*) وإلا صار شكل
- * الصورة مختلف حسب مصدر النشر (يدوي عبر Admin Panel أو آلي عبر البوت).
+ * hasad_news_bot_fixed.py (الثوابت HEADLINE_*) وإلا صار شكل الصورة مختلف
+ * حسب مصدر النشر (يدوي عبر لوحة الإدارة أو آلي عبر البوت).
+ *
+ * ملاحظة: الشعار (logoSrc) يُمرَّر من إعدادات الموقع (site_settings →
+ * watermark_logo_url)، تماماً مثل applyWatermark الحالية بهذا المشروع —
+ * لا يوجد شعار ثابت مرفق بالكود.
  */
 
 const OG_WIDTH = 1200;
@@ -19,13 +23,13 @@ const BAND_HEIGHT_PERCENT = 0.33;
 const LINE_THICKNESS = 3; // سمك الخط المستقيم العلوي (بدل انحناء الموجة)
 const FADE_H = 90; // ارتفاع تدرّج التعتيم فوق الشريط الذي يذوب داخل الصورة
 
-const BAND_COLOR_TOP = "rgb(15, 23, 42)";
-const BAND_COLOR_BOTTOM = "rgb(26, 43, 73)";
-const CURVE_COLOR = "rgb(195, 16, 45)"; // أحمر — لون الخط المستقيم العلوي
-const TEXT_COLOR = "rgb(248, 248, 246)";
-const SITE_NAME_COLOR = "rgb(196, 20, 46)";
+const BAND_COLOR_TOP = "rgb(8, 8, 10)";
+const BAND_COLOR_BOTTOM = "rgb(22, 22, 24)";
+const CURVE_COLOR = "rgb(197, 160, 76)"; // ذهبي — لون الخط المستقيم العلوي
+const TEXT_COLOR = "rgb(250, 250, 248)";
+const SITE_NAME_COLOR = "rgb(212, 175, 90)";
 const DIVIDER_COLOR = "rgba(255, 255, 255, 0.24)"; // فاصل رفيع خفيف بين كتلة الشعار وكتلة العنوان
-const ACCENT_COLOR = "rgb(195, 16, 45)"; // أحمر — الشريط العمودي الصغير (kicker) جنب العنوان
+const ACCENT_COLOR = "rgb(196, 155, 58)"; // ذهبي — الشريط العمودي الصغير (kicker) جنب العنوان
 
 const HEADLINE_FONT_SIZE = 54;
 const HEADLINE_FONT_MIN_SIZE = 30; // أصغر حجم خط مسموح قبل تكبير الشريط بدل قصّ النص
@@ -40,12 +44,13 @@ const LEFT_MARGIN = 30;
 const RIGHT_MARGIN = 40;
 const GAP_BETWEEN = 30;
 const DIVIDER_GAP = 26; // مسافة الفاصل الرفيع بين كتلة الشعار/الاسم وكتلة العنوان
-const ACCENT_BAR_W = 4; // عرض الشريط الأحمر الصغير (kicker)
-const ACCENT_GAP = 18; // مسافة بين الشريط الأحمر وبداية نص العنوان
+const ACCENT_BAR_W = 4; // عرض الشريط الذهبي الصغير (kicker)
+const ACCENT_GAP = 18; // مسافة بين الشريط الذهبي وبداية نص العنوان
 
-// نفس الخط الفعلي المستخدم بالموقع (IBM Plex Arabic بوزن Bold)، بدل
-// Amiri-Bold المستخدم بنسخة البوت — أقرب لهوية الموقع البصرية الفعلية.
-const FONT_FAMILY = '"IBM Plex Arabic", sans-serif';
+// نفس خط البوت (Amiri-Bold) — محمّل أصلاً بالموقع عبر Google Fonts
+const FONT_FAMILY = '"Amiri", serif';
+
+const DEFAULT_SITE_NAME = "حصاد اليوم";
 
 export interface HeadlineDesignResult {
   blob: Blob;
@@ -57,16 +62,14 @@ export interface HeadlineDesignResult {
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    if (src.startsWith("http")) {
-      img.crossOrigin = "anonymous";
-    }
+    if (src.startsWith("http")) img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error("فشل في تحميل الصورة، تأكد من المسار وصيغة الملف"));
     img.src = src;
   });
 }
 
-function loadImageFromFile(file: File): Promise<{ img: HTMLImageElement; objectUrl: string }> {
+function loadImageFromFile(file: File | Blob): Promise<{ img: HTMLImageElement; objectUrl: string }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -86,12 +89,10 @@ async function ensureFontsReady(): Promise<void> {
       document.fonts.load(`700 ${SITE_FONT_SIZE}px ${FONT_FAMILY}`),
     ]);
   } catch {
-    // لو تعذّر تحميل الخط بشكل استباقي، نتابع برسم الكانفاس على أي حال
-    // (المتصفح سيستخدم بديل النظام).
+    // لو تعذّر تحميل الخط استباقياً، نتابع الرسم (المتصفح يستخدم بديل النظام)
   }
 }
 
-/** يلف نص عربي لأسطر لا تتجاوز max_width بالبكسل، بنفس أسلوب _headline_wrap_text */
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.split(" ");
   const lines: string[] = [];
@@ -110,7 +111,6 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
-/** يرسم الشريط السفلي بحافة علوية مستقيمة (تدرّج كحلي + خط حافة أحمر رفيع + تعتيم ناعم فوقه) */
 function drawBand(ctx: CanvasRenderingContext2D, width: number, height: number, bandH: number) {
   const topY = height - bandH;
   const fadeH = Math.min(FADE_H, topY);
@@ -119,13 +119,13 @@ function drawBand(ctx: CanvasRenderingContext2D, width: number, height: number, 
   // تدرّج تعتيم ناعم فوق الشريط يذوب داخل الصورة الأصلية (بدل القطع الفجائي)
   if (fadeH > 0) {
     const fadeGradient = ctx.createLinearGradient(0, fadeTop, 0, topY);
-    fadeGradient.addColorStop(0, "rgba(15, 23, 42, 0)");
-    fadeGradient.addColorStop(1, "rgba(15, 23, 42, 1)");
+    fadeGradient.addColorStop(0, "rgba(8, 8, 10, 0)");
+    fadeGradient.addColorStop(1, "rgba(8, 8, 10, 1)");
     ctx.fillStyle = fadeGradient;
     ctx.fillRect(0, fadeTop, width, fadeH);
   }
 
-  // تدرّج كحلي رأسي عبر كامل ارتفاع الشريط (معتم بالكامل)
+  // تدرّج أسود-فحمي رأسي عبر كامل ارتفاع الشريط (معتم بالكامل)
   const gradient = ctx.createLinearGradient(0, topY, 0, height);
   gradient.addColorStop(0, BAND_COLOR_TOP);
   gradient.addColorStop(1, BAND_COLOR_BOTTOM);
@@ -142,10 +142,10 @@ function drawBand(ctx: CanvasRenderingContext2D, width: number, height: number, 
  * عنوان الخبر) — نفس apply_headline_design_to_image() بالبوت حرفياً.
  */
 export async function applyHeadlineDesign(
-  imageSource: string | File,
+  imageSource: string | File | Blob,
   logoSrc: string,
   headlineText: string,
-  siteName: string = "الجنوب فويس"
+  siteName: string = DEFAULT_SITE_NAME
 ): Promise<HeadlineDesignResult> {
   let objectUrlToRevoke: string | null = null;
 
@@ -267,7 +267,7 @@ export async function applyHeadlineDesign(
     const startY = rowCenterY - textBlockH / 2 + lineH / 2;
     const rightEdge = OG_WIDTH - RIGHT_MARGIN;
 
-    // شريط أحمر عمودي صغير (kicker) يفتح كتلة العنوان — لمسة القنوات العالمية
+    // شريط ذهبي عمودي صغير (kicker) يفتح كتلة العنوان — لمسة القنوات العالمية
     ctx.fillStyle = ACCENT_COLOR;
     ctx.fillRect(accentX, rowCenterY - textBlockH / 2, ACCENT_BAR_W, textBlockH);
 
@@ -278,7 +278,7 @@ export async function applyHeadlineDesign(
 
     // 7) توليد المخرجات النهائية بصيغة WebP
     const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("فشل في إنشاء Blob"))), "image/webp", 0.9);
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("فشل في إنشاء صورة المشاركة"))), "image/webp", 0.9);
     });
     const previewUrl = canvas.toDataURL("image/webp", 0.9);
 
@@ -292,7 +292,6 @@ export async function applyHeadlineDesign(
   }
 }
 
-/** دالة مساعدة لتوليد معاينة سريعة */
 export async function generateHeadlineDesignPreview(
   imageUrl: string,
   logoSrc: string,
