@@ -27,6 +27,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { generateMetaTitle, generateSEOSlug, extractSEOKeywords } from "@/lib/seoHelpers";
+import { SITE_URL } from "@/lib/postUrl";
 import { optimizeImage, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
 import { useCategories } from "@/hooks/useCategories";
 import { useAuthors } from "@/hooks/useAuthors";
@@ -500,7 +501,7 @@ const JsonNewsImporter = () => {
         try {
           await fetch("/api/ping-sitemap", { method: "GET" }).catch(() => {});
           await fetch(
-            `https://www.google.com/ping?sitemap=${encodeURIComponent("https://hasad-alyoum.com/sitemap.xml")}`,
+            `https://www.google.com/ping?sitemap=${encodeURIComponent(`${SITE_URL}/sitemap.xml`)}`,
             { mode: "no-cors" }
           );
         } catch { /* silent */ }
