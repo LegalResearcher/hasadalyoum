@@ -13,7 +13,7 @@ import { createClient } from '@supabase/supabase-js';
  * - هذا يُرجع 301 HTTP حقيقي يفهمه Googlebot فوراً
  * - PostRedirect.tsx يعتمد على JavaScript في المتصفح (لا يُعدّ 301 لجوجل)
  */
-const SITE_URL = "https://hasadalyoum.vercel.app";
+const SITE_URL = "https://hasad-alyoum.com";
 
 export default async function handler(req, res) {
   const { id } = req.query;
