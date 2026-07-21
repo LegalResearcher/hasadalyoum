@@ -233,32 +233,6 @@ const PostEditor = () => {
   // ─── تتبع ما إذا كان النشر جديداً (من draft/scheduled → published) ──────────
   const prevStatusRef = useRef<string | null>(null);
 
-  // ─── إرسال الروابط لـ Google Indexing API عبر Supabase Edge Function ────────
-  const sendUrlsToGoogleIndexing = async (
-    urls: string[]
-  ): Promise<{ sent: number; failed: number }> => {
-    let sent = 0;
-    let failed = 0;
-    for (let i = 0; i < urls.length; i += 10) {
-      const batch = urls.slice(i, i + 10);
-      try {
-        const { error } = await supabase.functions.invoke("google-indexing", {
-          body: { urls: batch, type: "URL_UPDATED" },
-        });
-        if (error) {
-          console.error("google-indexing batch error:", error);
-          failed += batch.length;
-        } else {
-          sent += batch.length;
-        }
-      } catch (err) {
-        console.error("google-indexing invoke failed:", err);
-        failed += batch.length;
-      }
-    }
-    return { sent, failed };
-  };
-
   const { data: categories } = useCategories();
   const { data: authors } = useAuthors();
 
@@ -634,20 +608,59 @@ const PostEditor = () => {
         await seedViewsForPost(postId);
       }
 
-      // فهرسة Google عند أي نشر جديد (من draft/scheduled → published)
+      // فهرسة Google عند أي نشر جديد (من draft/scheduled → published) — نفس منطق الجنوب فويس حرفياً
       if (isNewPublish && slug) {
         const postUrl = getPostUrl(slug, new Date().toISOString());
+
         // Ping sitemap لـ Google و Bing في الخلفية
         pingSearchEngines(`${SITE_URL}/sitemap.xml`)
           .then((res) => console.log("Ping results:", res))
           .catch((err) => console.error("Ping failed:", err));
-        // إرسال الرابط لـ Google Indexing API
-        sendUrlsToGoogleIndexing([postUrl])
-          .then(({ sent, failed }) => {
-            if (sent > 0) toast.success("تم إرسال الخبر لـ Google فهرسة فورية");
-            else if (failed > 0) console.warn("Google Indexing API failed for:", postUrl);
-          })
-          .catch((err) => console.error("[Auto-Index] failed:", err));
+
+        // Log the final URL being sent to Google for verification
+        console.log('🔗 URL being sent to Google Indexing API:', postUrl);
+        toast.info(`جاري إرسال الرابط: ${postUrl}`);
+
+        try {
+          // Call Google Indexing API via edge function
+          const { data, error } = await supabase.functions.invoke('google-indexing', {
+            body: { urls: [postUrl], type: 'URL_UPDATED' }
+          });
+
+          // Check for edge function invocation error
+          if (error) {
+            console.error('Google Indexing API invocation error:', error);
+            console.error('Failed URL:', postUrl);
+            toast.error('تم نشر الخبر، لكن فشل الاتصال بـ Google Indexing API. تحقق من إعداد مفتاح الخدمة.');
+          } else if (data?.error) {
+            // Check for API-level error in response
+            console.error('Google Indexing API returned error:', data.error);
+            console.error('Failed URL:', postUrl);
+            toast.error(`تم نشر الخبر، لكن فشلت الفهرسة: ${data.error}`);
+          } else {
+            // Check if indexing was actually successful
+            const indexingResult = data?.results?.[0];
+            if (indexingResult?.success === true) {
+              toast.success('تم نشر الخبر وإرسال طلب الفهرسة إلى Google بنجاح!');
+              console.log('✅ Indexing successful for URL:', postUrl);
+              console.log('Indexing response:', indexingResult);
+            } else if (indexingResult?.success === false) {
+              // API returned but indexing failed
+              const errorDetails = indexingResult?.data?.error?.message || indexingResult?.error || 'خطأ غير معروف';
+              console.error('❌ Indexing failed for URL:', postUrl);
+              console.error('Error details:', indexingResult);
+              toast.error(`تم نشر الخبر، لكن فشلت الفهرسة: ${errorDetails}`);
+            } else {
+              // Unexpected response structure
+              console.warn('⚠️ Unexpected indexing response for URL:', postUrl);
+              console.warn('Response:', data);
+              toast.warning('تم نشر الخبر. حالة الفهرسة غير مؤكدة.');
+            }
+          }
+        } catch (error) {
+          // Network/other error
+          console.error('Publish with indexing error:', error);
+        }
       }
 
       navigate("/admin/posts");
@@ -755,7 +768,7 @@ const PostEditor = () => {
           </div>
           <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <Save className="h-4 w-4 ml-2" />}
-            حفظ
+            {saveMutation.isPending ? "جاري الحفظ..." : (isNew ? "نشر الخبر" : "تحديث الخبر")}
           </Button>
         </div>
 
