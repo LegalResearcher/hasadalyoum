@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     }
 
     // الموقع الرسمي
-    const siteUrl = 'https://www.hasad-alyoum.com'
+    const siteUrl = 'https://hasad-alyoum.com'
     const postUrl = `${siteUrl}/post/${postId}`
 
     // معالجة رابط الصورة
