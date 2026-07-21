@@ -73,7 +73,7 @@ serve(async (req) => {
           results.push({ id: post.id, title: post.title, success: false, error: updateError.message });
         } else {
           console.log(`Published post: ${post.title}`);
-          const postUrl = `https://www.hasad-alyoum.com${getPostUrl(post)}`;
+          const postUrl = `https://hasad-alyoum.com${getPostUrl(post)}`;
           urlsToIndex.push(postUrl);
           results.push({ id: post.id, title: post.title, success: true, url: postUrl });
         }
