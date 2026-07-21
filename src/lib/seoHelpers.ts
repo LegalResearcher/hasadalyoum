@@ -1,6 +1,6 @@
 // أدوات SEO متقدمة لتحسين فهرسة جوجل - مُستنسخة ومُكيّفة لموقع حصاد اليوم
 
-export const SITE_URL = "https://www.hasad-alyoum.com";
+export const SITE_URL = "https://hasad-alyoum.com";
 import { getPostUrl } from "./postUrl";
 export const SITE_NAME = "حصاد اليوم";
 export const SITE_LOGO = `${SITE_URL}/logo.png`;
