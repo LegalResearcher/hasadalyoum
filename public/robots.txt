@@ -12,3 +12,6 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://hasad-alyoum.com/sitemap.xml
+Sitemap: https://hasad-alyoum.com/sitemap-news.xml
