@@ -31,6 +31,8 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
                 src={post.author.avatar_url}
                 alt={post.author.name}
                 className="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                loading="lazy"
+                decoding="async"
               />
             ) : (
               <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-muted flex items-center justify-center">
@@ -63,6 +65,8 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
             src={cardImage || "/logo.png"}
             alt={post.title}
             className={cardImage ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
+            loading="lazy"
+            decoding="async"
           />
         </div>
         <div className="flex-1">
@@ -86,6 +90,8 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
             src={cardImage || "/logo.png"}
             alt={post.title}
             className={cardImage ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
+            loading="lazy"
+            decoding="async"
           />
         </div>
         {post.category && (
@@ -109,6 +115,8 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
           src={cardImage || "/logo.png"}
           alt={post.title}
           className={cardImage ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
+          loading="lazy"
+          decoding="async"
         />
       </div>
       <div className="pt-3 md:pt-4">
