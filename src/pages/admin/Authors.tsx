@@ -129,7 +129,7 @@ const Authors = () => {
 
     const { error: uploadError } = await supabase.storage
       .from("author-avatars")
-      .upload(fileName, file);
+      .upload(fileName, file, { cacheControl: "31536000" });
 
     if (uploadError) {
       toast.error("حدث خطأ أثناء رفع الصورة");
