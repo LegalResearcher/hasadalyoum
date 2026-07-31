@@ -47,5 +47,6 @@ export const useBreakingNews = () => {
 
       return combined as BreakingNewsItem[];
     },
+    staleTime: 1000 * 60, // دقيقة واحدة فقط — الأخبار العاجلة تحتاج تحديث أسرع من باقي القوائم
   });
 };
