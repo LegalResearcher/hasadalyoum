@@ -36,10 +36,16 @@ const Category = () => {
       const from = (page - 1) * postsLimit;
       const to = from + postsLimit - 1;
 
+      // نستبعد عمداً حقل content (نص المقال الكامل) هنا — صفحة القسم تعرض بطاقات
+      // فقط (عنوان + صورة + ملخص)، وجلب المحتوى الكامل لكل مقال بالقائمة كان
+      // يستهلك Database Egress على Supabase بدون أي فائدة فعلية.
       const { data, count, error } = await supabase
         .from("posts")
         .select(
-          `*, category:categories(id, name, slug), author:authors(id, name, avatar_url)`,
+          `id, title, slug, excerpt, featured_image, thumbnail_image, category_id,
+           author_id, status, is_featured, is_breaking, views_count, word_count,
+           reading_time, published_at, created_at,
+           category:categories(id, name, slug), author:authors(id, name, avatar_url)`,
           { count: "exact" }
         )
         .eq("category_id", category.id)
@@ -53,6 +59,7 @@ const Category = () => {
     },
     enabled: !!category?.id,
     placeholderData: (previousData) => previousData,
+    staleTime: 1000 * 60 * 5,
   });
 
   const posts = data?.posts || [];
