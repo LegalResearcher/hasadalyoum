@@ -1,6 +1,11 @@
 /**
  * أداة تحسين الصور - حصاد اليوم
  * تُصغّر الصور إلى أقصى عرض/ارتفاع 1200px، تحوّلها إلى WebP، وتضغطها لأقل من 100KB
+ *
+ * كما توفر نسخة "مصغّرة" (Thumbnail) بحجم أصغر بكثير (400px / ~25KB) تُستخدم في
+ * بطاقات القوائم (الرئيسية، الأقسام، الأكثر قراءة) بدل الصورة الكاملة، لتقليل
+ * استهلاك Storage Egress على Supabase — الصورة الكاملة تبقى محفوظة وتُستخدم فقط
+ * داخل صفحة الخبر نفسه.
  */
 
 const MAX_WIDTH = 1200;
@@ -8,6 +13,12 @@ const MAX_HEIGHT = 1200;
 const TARGET_SIZE_KB = 100;
 const INITIAL_QUALITY = 0.85;
 const MIN_QUALITY = 0.3;
+
+// إعدادات النسخة المصغّرة المستخدمة في بطاقات القوائم فقط
+const THUMB_MAX_WIDTH = 400;
+const THUMB_MAX_HEIGHT = 400;
+const THUMB_TARGET_SIZE_KB = 25;
+const THUMB_INITIAL_QUALITY = 0.8;
 
 interface OptimizedImage {
   blob: Blob;
@@ -67,13 +78,20 @@ function canvasToWebP(canvas: HTMLCanvasElement, quality: number): Promise<Blob>
 }
 
 /**
- * تحسين ملف صورة: تصغير + تحويل لـ WebP + ضغط للحجم المستهدف
+ * النواة المشتركة: تصغير الصورة إلى أقصى أبعاد معطاة، تحويلها WebP، وضغطها
+ * تدريجياً حتى تصل للحجم المستهدف. يُستخدمها كل من optimizeImage و generateThumbnail.
  */
-export async function optimizeImage(file: File): Promise<OptimizedImage> {
+async function resizeAndCompress(
+  file: File,
+  maxWidth: number,
+  maxHeight: number,
+  targetSizeKb: number,
+  initialQuality: number
+): Promise<OptimizedImage> {
   const originalSize = file.size;
   const img = await loadImage(file);
 
-  const { width, height } = calculateDimensions(img.naturalWidth, img.naturalHeight, MAX_WIDTH, MAX_HEIGHT);
+  const { width, height } = calculateDimensions(img.naturalWidth, img.naturalHeight, maxWidth, maxHeight);
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -91,10 +109,10 @@ export async function optimizeImage(file: File): Promise<OptimizedImage> {
 
   URL.revokeObjectURL(img.src);
 
-  let quality = INITIAL_QUALITY;
+  let quality = initialQuality;
   let blob = await canvasToWebP(canvas, quality);
 
-  while (blob.size > TARGET_SIZE_KB * 1024 && quality > MIN_QUALITY) {
+  while (blob.size > targetSizeKb * 1024 && quality > MIN_QUALITY) {
     quality -= 0.05;
     blob = await canvasToWebP(canvas, quality);
   }
@@ -107,6 +125,22 @@ export async function optimizeImage(file: File): Promise<OptimizedImage> {
     optimizedSize: blob.size,
     compressionRatio: originalSize / blob.size,
   };
+}
+
+/**
+ * تحسين ملف صورة: تصغير + تحويل لـ WebP + ضغط للحجم المستهدف (النسخة الكاملة،
+ * تُستخدم في صفحة الخبر نفسها)
+ */
+export async function optimizeImage(file: File): Promise<OptimizedImage> {
+  return resizeAndCompress(file, MAX_WIDTH, MAX_HEIGHT, TARGET_SIZE_KB, INITIAL_QUALITY);
+}
+
+/**
+ * توليد نسخة مصغّرة جداً من نفس الصورة (400px تقريباً، أقل من 25KB) لاستخدامها
+ * في بطاقات القوائم (الرئيسية، الأقسام، الأكثر قراءة) بدل الصورة الكاملة.
+ */
+export async function generateThumbnail(file: File): Promise<OptimizedImage> {
+  return resizeAndCompress(file, THUMB_MAX_WIDTH, THUMB_MAX_HEIGHT, THUMB_TARGET_SIZE_KB, THUMB_INITIAL_QUALITY);
 }
 
 export function isOptimizableImage(file: File): boolean {
