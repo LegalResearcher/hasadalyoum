@@ -70,7 +70,7 @@ const Media = () => {
 
       const { error: uploadError } = await supabase.storage
         .from("post-images")
-        .upload(fileName, file);
+        .upload(fileName, file, { cacheControl: "31536000" });
 
       if (uploadError) {
         toast.error(`خطأ في رفع ${file.name}`);
