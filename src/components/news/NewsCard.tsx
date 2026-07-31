@@ -7,6 +7,11 @@ interface NewsCardProps {
 }
 
 const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
+  // نفضّل النسخة المصغّرة (thumbnail_image) لبطاقات القوائم لتقليل استهلاك
+  // Storage Egress على Supabase؛ المقالات القديمة بدون thumbnail تعرض الصورة
+  // الكاملة كما كانت (fallback).
+  const cardImage = post.thumbnail_image || post.featured_image;
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "";
     return new Date(dateString).toLocaleDateString("ar-EG", {
@@ -55,9 +60,9 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
       >
         <div className="w-24 h-20 sm:w-32 sm:h-24 flex-shrink-0 overflow-hidden bg-muted flex items-center justify-center">
           <img
-            src={post.featured_image || "/logo.png"}
+            src={cardImage || "/logo.png"}
             alt={post.title}
-            className={post.featured_image ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
+            className={cardImage ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
           />
         </div>
         <div className="flex-1">
@@ -78,9 +83,9 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
       <Link to={`/article/${post.slug}`} className="block group">
         <div className="relative aspect-[4/3] overflow-hidden mb-3 bg-muted flex items-center justify-center">
           <img
-            src={post.featured_image || "/logo.png"}
+            src={cardImage || "/logo.png"}
             alt={post.title}
-            className={post.featured_image ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
+            className={cardImage ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
           />
         </div>
         {post.category && (
@@ -101,9 +106,9 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted flex items-center justify-center">
         <img
-          src={post.featured_image || "/logo.png"}
+          src={cardImage || "/logo.png"}
           alt={post.title}
-          className={post.featured_image ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
+          className={cardImage ? "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" : "w-1/2 h-1/2 object-contain"}
         />
       </div>
       <div className="pt-3 md:pt-4">
