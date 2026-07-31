@@ -19,6 +19,8 @@ export default async function handler(req, res) {
       const MAIN_IMAGE = `${SITE_URL}/logo.png`;
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
+      // محتوى ثابت 100% (لا يعتمد على قاعدة البيانات) — كاش طويل آمن تماماً
+      res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=3600");
       return res.status(200).send(`<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -126,7 +128,11 @@ export default async function handler(req, res) {
     });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=300");
+    // كاش أطول (6 ساعات بدل ساعة) لأن هذي الصفحة تُخدَّم فقط للروبوتات
+    // (Google/فيسبوك/واتساب...) لأغراض المعاينة والفهرسة — لا تحتاج نفس درجة
+    // الحداثة اللي يحتاجها القارئ البشري، وكل تمديد يعني استدعاءات أقل لـ
+    // Vercel و Supabase عند تكرار الزحف على نفس الرابط.
+    res.setHeader("Cache-Control", "public, s-maxage=21600, stale-while-revalidate=3600");
 
     return res.status(200).send(`<!DOCTYPE html>
 <html lang="ar" dir="rtl">
