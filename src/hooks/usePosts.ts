@@ -1,6 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * حقول القوائم (الرئيسية / الأقسام / الأكثر قراءة): تستبعد عمداً عمود content
+ * (نص المقال الكامل) لأنه غير مستخدم في بطاقات العرض، وهو غالباً أكبر عمود في
+ * الجدول. هذا يقلّل Database Egress على Supabase بشكل كبير مقارنة بـ select("*").
+ * صفحة المقال المفرد (usePostBySlug) وحدها تجلب content لأنها تعرضه فعلياً.
+ */
+const LIST_FIELDS = `
+  id, title, slug, excerpt, featured_image, thumbnail_image, category_id,
+  author_id, user_id, source_type, external_video_url, status, is_featured,
+  is_breaking, is_pinned, pinned_order, views_count, word_count, reading_time,
+  meta_title, meta_description, meta_keywords, scheduled_at, hide_after,
+  published_at, created_at, updated_at
+`;
+
 export interface Post {
   id: string;
   title: string;
@@ -8,6 +22,7 @@ export interface Post {
   excerpt: string | null;
   content: string | null;
   featured_image: string | null;
+  thumbnail_image: string | null;
   category_id: string | null;
   author_id: string | null;
   user_id: string | null;
@@ -53,7 +68,7 @@ export const usePosts = (options?: {
       let query = supabase
         .from("posts")
         .select(`
-          *,
+          ${LIST_FIELDS},
           category:categories(id, name, slug),
           author:authors(id, name, avatar_url)
         `)
@@ -89,6 +104,7 @@ export const usePosts = (options?: {
       if (error) throw error;
       return data as Post[];
     },
+    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -120,7 +136,7 @@ export const useFeaturedPosts = (limit: number = 10) => {
       const { data, error } = await supabase
         .from("posts")
         .select(`
-          *,
+          ${LIST_FIELDS},
           category:categories(id, name, slug)
         `)
         .eq("status", "published")
@@ -131,6 +147,7 @@ export const useFeaturedPosts = (limit: number = 10) => {
       if (error) throw error;
       return data as Post[];
     },
+    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -151,7 +168,7 @@ export const usePostsByCategory = (categorySlug: string, limit?: number) => {
       const { data, error } = await supabase
         .from("posts")
         .select(`
-          *,
+          ${LIST_FIELDS},
           category:categories(id, name, slug),
           author:authors(id, name, avatar_url)
         `)
@@ -164,6 +181,7 @@ export const usePostsByCategory = (categorySlug: string, limit?: number) => {
       return data as Post[];
     },
     enabled: !!categorySlug,
+    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -190,7 +208,7 @@ export const useMostReadPosts = (limit: number = 12) => {
     queryKey: ["most-read-posts", limit],
     queryFn: async () => {
       const selectFields = `
-        *,
+        ${LIST_FIELDS},
         category:categories(id, name, slug),
         author:authors(id, name, avatar_url)
       `;
