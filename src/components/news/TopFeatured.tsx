@@ -71,11 +71,12 @@ const TopFeatured = () => {
               <div className="relative aspect-[16/10] overflow-hidden bg-muted mb-3 flex items-center justify-center">
                 <img
                   src={
+                    p.thumbnail_image ||
                     p.featured_image ||
                     "/logo.png"
                   }
                   alt={p.title}
-                  className={p.featured_image ? "w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700" : "w-1/2 h-1/2 object-contain"}
+                  className={(p.thumbnail_image || p.featured_image) ? "w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700" : "w-1/2 h-1/2 object-contain"}
                 />
               </div>
               {p.category && (
