@@ -77,7 +77,7 @@ const Settings = () => {
     setIsUploadingLogo(true);
     try {
       const fileName = `watermark-logo-${Date.now()}.${file.name.split(".").pop()}`;
-      const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, file);
+      const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, file, { cacheControl: "31536000" });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
       handleChange("watermark_logo_url", urlData.publicUrl);
