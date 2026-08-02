@@ -27,8 +27,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { generateMetaTitle, generateSEOSlug, extractSEOKeywords } from "@/lib/seoHelpers";
-import { SITE_URL } from "@/lib/postUrl";
-import { optimizeImage, generateThumbnail, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
+import { optimizeImage, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
 import { useCategories } from "@/hooks/useCategories";
 import { useAuthors } from "@/hooks/useAuthors";
 
@@ -49,7 +48,6 @@ interface ImportedPost {
   author_id: string;
   scheduled_at: string;
   featured_image: string;
-  thumbnail_image?: string;
   external_video_url: string;
   meta_title: string;
   meta_description: string;
@@ -262,7 +260,6 @@ const JsonNewsImporter = () => {
     try {
       let fileToUpload: Blob = file;
       let fileName: string;
-      let thumbUrl = "";
       if (isOptimizableImage(file)) {
         toast.info(`جاري تحسين الصورة... (${formatFileSize(file.size)})`);
         const optimized = await optimizeImage(file);
@@ -271,19 +268,6 @@ const JsonNewsImporter = () => {
         toast.success(
           `تم ضغط الصورة: ${formatFileSize(optimized.originalSize)} → ${formatFileSize(optimized.optimizedSize)}`
         );
-
-        // نسخة مصغّرة لبطاقات القوائم — نفس منطق محرر المقالات
-        try {
-          const thumb = await generateThumbnail(file);
-          const thumbFileName = `thumb-${Math.random().toString(36).substring(2)}-${Date.now()}.webp`;
-          const { error: thumbErr } = await supabase.storage
-            .from("post-images")
-            .upload(thumbFileName, thumb.blob, { contentType: "image/webp", cacheControl: "31536000" });
-          if (!thumbErr) {
-            const { data: thumbPub } = supabase.storage.from("post-images").getPublicUrl(thumbFileName);
-            thumbUrl = thumbPub.publicUrl;
-          }
-        } catch { /* غير حرج — يتراجع تلقائياً لعرض الصورة الكاملة */ }
       } else {
         const ext = file.name.split(".").pop();
         fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${ext}`;
@@ -292,13 +276,12 @@ const JsonNewsImporter = () => {
         .from("post-images")
         .upload(fileName, fileToUpload, {
           contentType: isOptimizableImage(file) ? "image/webp" : file.type,
-          cacheControl: "31536000",
         });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage
         .from("post-images")
         .getPublicUrl(fileName);
-      updatePost(key, { featured_image: publicUrl, thumbnail_image: thumbUrl || undefined, uploading: false });
+      updatePost(key, { featured_image: publicUrl, uploading: false });
       toast.success("تم رفع الصورة");
     } catch (err: any) {
       updatePost(key, { uploading: false });
@@ -390,7 +373,6 @@ const JsonNewsImporter = () => {
         badge: post.badge || null,
         author_id: post.author_id || null,
         featured_image: post.featured_image || null,
-        thumbnail_image: post.thumbnail_image || null,
         external_video_url: post.external_video_url || null,
         meta_title: post.meta_title || generateMetaTitle(post.title),
         meta_description: post.meta_description?.substring(0, 160) || null,
@@ -514,13 +496,10 @@ const JsonNewsImporter = () => {
     // فهرسة Google عبر Indexing API
     if (publishedUrls.length > 0) {
       if (withIndexing) {
-        // "نشر + فهرسة فورية" — مع ping وإشعار للمستخدم
+        // "نشر + فهرسة فورية" — /api/ping-sitemap يرسل الآن روابط الـ sitemap لـ IndexNow فعلياً
+        // (استُبدل استدعاء google.com/ping القديم لأنه ألغي رسمياً منذ 2023 ويرجع 404)
         try {
           await fetch("/api/ping-sitemap", { method: "GET" }).catch(() => {});
-          await fetch(
-            `https://www.google.com/ping?sitemap=${encodeURIComponent(`${SITE_URL}/sitemap.xml`)}`,
-            { mode: "no-cors" }
-          );
         } catch { /* silent */ }
         const { sent, failed } = await sendUrlsToGoogleIndexing(publishedUrls);
         if (sent > 0) {
