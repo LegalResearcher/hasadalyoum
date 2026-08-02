@@ -548,7 +548,6 @@ export type Database = {
           excerpt: string | null
           external_video_url: string | null
           featured_image: string | null
-          gallery_images: string[] | null
           hide_after: string | null
           id: string | null
           is_breaking: boolean | null
@@ -579,7 +578,6 @@ export type Database = {
           excerpt?: string | null
           external_video_url?: string | null
           featured_image?: string | null
-          gallery_images?: string[] | null
           hide_after?: string | null
           id?: string | null
           is_breaking?: boolean | null
@@ -610,7 +608,6 @@ export type Database = {
           excerpt?: string | null
           external_video_url?: string | null
           featured_image?: string | null
-          gallery_images?: string[] | null
           hide_after?: string | null
           id?: string | null
           is_breaking?: boolean | null
