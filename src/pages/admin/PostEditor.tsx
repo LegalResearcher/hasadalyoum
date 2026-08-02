@@ -17,7 +17,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useAuth } from "@/hooks/useAuth";
 import { translateError } from "@/lib/errorTranslator";
-import { optimizeImage, generateThumbnail, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
+import { optimizeImage, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
 import { applyWatermark, generateWatermarkPreview } from "@/lib/imageWatermark";
 import { applyHeadlineDesign, generateHeadlineDesignPreview } from "@/lib/imageHeadlineDesign";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -242,7 +242,6 @@ const PostEditor = () => {
     excerpt: "",
     content: "",
     featured_image: "",
-    thumbnail_image: "",
     gallery_images: [] as string[],
     category_id: "",
     author_id: "",
@@ -286,7 +285,6 @@ const PostEditor = () => {
         excerpt: post.excerpt || "",
         content: post.content || "",
         featured_image: post.featured_image || "",
-        thumbnail_image: (post as any).thumbnail_image || "",
         gallery_images: (post as any).gallery_images || [],
         category_id: post.category_id || "",
         author_id: post.author_id || "",
@@ -536,7 +534,7 @@ const PostEditor = () => {
             ? await applyHeadlineDesign(rest.featured_image, watermarkLogoUrl, (rest.title || '').trim())
             : await applyWatermark(rest.featured_image, watermarkLogoUrl);
           const wmFileName = `og-${Math.random().toString(36).substring(2)}-${Date.now()}.webp`;
-          const { error: wmErr } = await supabase.storage.from("post-images").upload(wmFileName, wm.blob, { contentType: "image/webp", cacheControl: "31536000" });
+          const { error: wmErr } = await supabase.storage.from("post-images").upload(wmFileName, wm.blob, { contentType: "image/webp" });
           if (!wmErr) {
             const { data: wmUrl } = supabase.storage.from("post-images").getPublicUrl(wmFileName);
             finalImageUrl = wmUrl.publicUrl;
@@ -588,10 +586,6 @@ const PostEditor = () => {
         const { error } = await supabase.from("posts").update(postData).eq("id", id);
         if (error) throw error;
         postId = id;
-      }
-
-      if (formData.status === "published") {
-        try { fetch(`https://www.google.com/ping?sitemap=${SITE_URL}/sitemap.xml`, { mode: "no-cors" }); } catch { }
       }
 
       return { postId, isNewPublish, slug: postData.slug || formData.slug };
@@ -693,42 +687,21 @@ const PostEditor = () => {
       let fileToUpload: Blob = file;
       let fileName: string;
       let contentType = file.type;
-      let thumbUrl = "";
-
       if (isOptimizableImage(file)) {
         toast.info(`جاري تحسين الصورة... (${formatFileSize(file.size)})`);
         const optimized = await optimizeImage(file);
         fileToUpload = optimized.blob; contentType = "image/webp"; fileName = `${Date.now()}.webp`;
         toast.success(`تم ضغط الصورة: ${formatFileSize(optimized.originalSize)} ← ${formatFileSize(optimized.optimizedSize)}`);
-
-        // نولّد أيضاً نسخة مصغّرة (thumbnail) تُستخدم في بطاقات القوائم بدل
-        // الصورة الكاملة، لتقليل استهلاك Storage Egress على Supabase.
-        try {
-          const thumb = await generateThumbnail(file);
-          const thumbFileName = `thumb-${Date.now()}.webp`;
-          const { error: thumbErr } = await supabase.storage
-            .from("post-images")
-            .upload(thumbFileName, thumb.blob, { contentType: "image/webp", cacheControl: "31536000" });
-          if (!thumbErr) {
-            const { data: thumbData } = supabase.storage.from("post-images").getPublicUrl(thumbFileName);
-            thumbUrl = thumbData.publicUrl;
-          }
-        } catch { /* فشل توليد الصورة المصغّرة ليس خطأً حرجاً — الصورة الكاملة تبقى تعمل كـ fallback */ }
       } else { fileName = `${Date.now()}.${file.name.split(".").pop()}`; }
 
       // ⚠️ لا تُطبَّق العلامة/شريط العنوان هنا وقت الرفع — تُطبَّق مرة واحدة فقط
       // عند الحفظ النهائي (saveMutation) لتفادي تكرار العلامة على نفس الصورة.
       // هنا فقط نرفع الصورة الأصلية (أو المضغوطة)، ونحدّث معاينة العلامة إن كانت مفعّلة.
 
-      // الأسماء فريدة دوماً (Date.now())، فمن الآمن تفعيل كاش طويل (سنة كاملة)
-      // بدل الاعتماد على الكاش الافتراضي القصير — هذا يقلل عدد المرات التي
-      // يُعاد فيها تحميل نفس الصورة من Supabase Storage لنفس الزائر.
-      const { error: uploadError } = await supabase.storage
-        .from("post-images")
-        .upload(fileName, fileToUpload, { contentType, cacheControl: "31536000" });
+      const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, fileToUpload, { contentType });
       if (uploadError) { toast.error(translateError(uploadError)); return; }
       const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
-      setFormData(prev => ({ ...prev, featured_image: urlData.publicUrl, thumbnail_image: thumbUrl || prev.thumbnail_image }));
+      setFormData(prev => ({ ...prev, featured_image: urlData.publicUrl }));
       if (enableWatermark) regenerateWatermarkPreview(urlData.publicUrl);
       toast.success("تم رفع الصورة بنجاح");
     } catch (error: any) { toast.error(translateError(error)); }
@@ -753,7 +726,7 @@ const PostEditor = () => {
         } else {
           fileName = `gallery-${Date.now()}-${Math.random().toString(36).slice(2)}.${file.name.split(".").pop()}`;
         }
-        const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, fileToUpload, { contentType, cacheControl: "31536000" });
+        const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, fileToUpload, { contentType });
         if (uploadError) { toast.error(translateError(uploadError)); continue; }
         const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
         uploadedUrls.push(urlData.publicUrl);
