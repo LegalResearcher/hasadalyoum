@@ -14,7 +14,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useQuery } from "@tanstack/react-query";
 import JsonNewsImporter from "@/components/admin/JsonNewsImporter";
 import { getPostUrl } from "@/lib/postUrl";
-import { optimizeImage, generateThumbnail } from "@/lib/imageOptimizer";
+import { optimizeImage } from "@/lib/imageOptimizer";
 import {
   Globe, FileCode, Map, Download, Wrench, Image as ImgIcon, Trash2,
   Database, Shuffle, Loader2, Search, X
@@ -69,9 +69,24 @@ const Maintenance = () => {
   const [htmlFrom, setHtmlFrom] = useState("");
   const [htmlTo, setHtmlTo] = useState("");
 
-  const pingGoogle = () => {
-    window.open(`https://www.google.com/ping?sitemap=${SITE_URL}/sitemap.xml`, "_blank");
-    toast.success("تم إرسال طلب الأرشفة لجوجل");
+  const pingGoogle = async () => {
+    // ملاحظة: google.com/ping ألغتها جوجل رسمياً منذ 2023 (ترجع 404) — البديل
+    // الفعلي الذي لا يزال يعمل هو IndexNow (بينج/ياندكس)، عبر /api/ping-sitemap.
+    // جوجل تحديداً ليس لها "أرشفة فورية" بالضغط على زر — القناة الوحيدة لها هي
+    // Search Console + sitemap.
+    try {
+      const res = await fetch("/api/ping-sitemap");
+      const data = await res.json();
+      if (data.success) {
+        toast.success(
+          `تم إرسال ${data.urlsSubmitted} رابط عبر IndexNow (بينج وياندكس). لجوجل تحديداً: تأكد من تسجيل sitemap.xml في Search Console.`
+        );
+      } else {
+        toast.error(data.message || "فشل إرسال طلب الأرشفة");
+      }
+    } catch {
+      toast.error("فشل الاتصال بخدمة الأرشفة");
+    }
   };
 
   const generateRobots = () => {
@@ -493,14 +508,10 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
   const optimizeAllImages = async () => {
     setImgProgress({ done: 0, total: 0, running: true });
     try {
-      // نستهدف كل منشور بدون thumbnail_image — سواء كانت صورته الرئيسية
-      // WebP بالفعل أو لا. هذا يعبّئ الصور المصغّرة للمقالات القديمة أيضاً،
-      // وليس فقط المقالات الجديدة التي تُنشر من الآن فصاعداً.
       const { data: posts } = await supabase
-        .from("posts").select("id, featured_image, thumbnail_image")
-        .not("featured_image", "is", null)
-        .is("thumbnail_image", null);
-      const targets = posts || [];
+        .from("posts").select("id, featured_image")
+        .not("featured_image", "is", null);
+      const targets = (posts || []).filter((p) => p.featured_image && !p.featured_image.endsWith(".webp"));
       setImgProgress({ done: 0, total: targets.length, running: true });
 
       for (let i = 0; i < targets.length; i++) {
@@ -509,46 +520,21 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
           const res = await fetch(p.featured_image!);
           const blob = await res.blob();
           const file = new File([blob], "img.jpg", { type: blob.type || "image/jpeg" });
-          const needsFullReoptimize = !p.featured_image!.endsWith(".webp");
+          const optimized = await optimizeImage(file);
+          const fileName = `optimized-${Date.now()}-${i}.webp`;
+          const { error: upErr } = await supabase.storage.from("post-images").upload(fileName, optimized.blob, { contentType: "image/webp" });
+          if (upErr) throw upErr;
+          const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
+          await supabase.from("posts").update({ featured_image: urlData.publicUrl }).eq("id", p.id);
 
-          const updates: Record<string, string> = {};
-
-          if (needsFullReoptimize) {
-            const optimized = await optimizeImage(file);
-            const fileName = `optimized-${Date.now()}-${i}.webp`;
-            const { error: upErr } = await supabase.storage
-              .from("post-images")
-              .upload(fileName, optimized.blob, { contentType: "image/webp", cacheControl: "31536000" });
-            if (upErr) throw upErr;
-            const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
-            updates.featured_image = urlData.publicUrl;
-
-            if (deleteOriginal) {
-              const oldPath = p.featured_image!.split("/post-images/")[1];
-              if (oldPath) await supabase.storage.from("post-images").remove([oldPath]);
-            }
-          }
-
-          // توليد الصورة المصغّرة (thumbnail) من نفس الملف الأصلي
-          try {
-            const thumb = await generateThumbnail(file);
-            const thumbFileName = `thumb-${Date.now()}-${i}.webp`;
-            const { error: thumbErr } = await supabase.storage
-              .from("post-images")
-              .upload(thumbFileName, thumb.blob, { contentType: "image/webp", cacheControl: "31536000" });
-            if (!thumbErr) {
-              const { data: thumbUrlData } = supabase.storage.from("post-images").getPublicUrl(thumbFileName);
-              updates.thumbnail_image = thumbUrlData.publicUrl;
-            }
-          } catch { /* فشل توليد الصورة المصغّرة لهذا المنشور فقط — لا يوقف بقية العملية */ }
-
-          if (Object.keys(updates).length > 0) {
-            await supabase.from("posts").update(updates).eq("id", p.id);
+          if (deleteOriginal) {
+            const oldPath = p.featured_image!.split("/post-images/")[1];
+            if (oldPath) await supabase.storage.from("post-images").remove([oldPath]);
           }
         } catch (e) { console.error("optimize failed", e); }
         setImgProgress({ done: i + 1, total: targets.length, running: true });
       }
-      toast.success(`تم تحسين ${targets.length} صورة (شاملاً الصور المصغّرة)`);
+      toast.success(`تم تحسين ${targets.length} صورة`);
     } catch (e: any) {
       toast.error("فشل: " + e.message);
     } finally {
@@ -741,7 +727,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
             </div>
             <div className="flex flex-wrap gap-2">
               <Button onClick={optimizeAllImages} disabled={imgProgress.running}>
-                {imgProgress.running && <Loader2 className="h-4 w-4 animate-spin ml-2" />} تحسين الصور + توليد المصغّرات
+                {imgProgress.running && <Loader2 className="h-4 w-4 animate-spin ml-2" />} تحسين الصور
               </Button>
               <Button variant="outline" onClick={cleanOrphans}><Trash2 className="h-4 w-4 ml-2" /> تنظيف الملفات</Button>
             </div>
