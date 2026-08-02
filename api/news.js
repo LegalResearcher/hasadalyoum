@@ -16,16 +16,15 @@ export default async function handler(req, res) {
 
     // --- 1. معاينة الصفحة الرئيسية ---
     if (type === "home") {
-      const MAIN_IMAGE = `${SITE_URL}/logo.png`;
+      const MAIN_IMAGE = `${SITE_URL}/og-image.png`;
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      // محتوى ثابت 100% (لا يعتمد على قاعدة البيانات) — كاش طويل آمن تماماً
-      res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=3600");
       return res.status(200).send(`<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8"/>
   <title>${SITE_NAME} | ينطلق من العاصمة صنعاء</title>
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1"/>
 
   <meta property="og:type" content="website"/>
   <meta property="og:title" content="${SITE_NAME} | ينطلق من العاصمة صنعاء"/>
@@ -35,10 +34,10 @@ export default async function handler(req, res) {
   <meta property="og:image" content="${MAIN_IMAGE}"/>
   <meta property="og:image:secure_url" content="${MAIN_IMAGE}"/>
   <meta property="og:image:type" content="image/png"/>
-  <meta property="og:image:width" content="600"/>
-  <meta property="og:image:height" content="600"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
 
-  <meta name="twitter:card" content="summary"/>
+  <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:title" content="${SITE_NAME} | ينطلق من العاصمة صنعاء"/>
   <meta name="twitter:description" content="تغطية إخبارية شاملة ومستقلة لأحداث اليمن والمنطقة لحظة بلحظة."/>
   <meta name="twitter:image" content="${MAIN_IMAGE}"/>
@@ -63,7 +62,7 @@ export default async function handler(req, res) {
 
     const { data: post, error } = await supabase
       .from("posts")
-      .select("id, title, excerpt, featured_image, slug, created_at, published_at, content, category:categories(name)")
+      .select("id, title, excerpt, featured_image, slug, created_at, updated_at, published_at, content, category:categories(name), author:authors(id, name, avatar_url)")
       .eq("slug", decodedSlug)
       .eq("status", "published")
       .gte("created_at", startDate)
@@ -108,6 +107,21 @@ export default async function handler(req, res) {
       year: 'numeric', month: 'long', day: 'numeric'
     });
 
+    // نفس منطق author بالضبط المستخدم بجهة العميل (generateNewsArticleSchema بملف seoHelpers.ts)
+    const authorSchema = post.author
+      ? {
+          "@type": "Person",
+          "name": post.author.name,
+          "url": `${SITE_URL}/author/${post.author.id}`,
+          ...(post.author.avatar_url ? { "image": post.author.avatar_url } : {})
+        }
+      : {
+          "@type": "Person",
+          "name": SITE_NAME,
+          "url": `${SITE_URL}/about`,
+          "worksFor": { "@type": "NewsMediaOrganization", "name": SITE_NAME, "url": SITE_URL }
+        };
+
     const schemaJson = JSON.stringify({
       "@context": "https://schema.org",
       "@type": "NewsArticle",
@@ -115,24 +129,23 @@ export default async function handler(req, res) {
       "description": post.excerpt || post.title,
       "image": image,
       "datePublished": dateUsed,
+      "dateModified": post.updated_at || dateUsed,
       "url": finalUrl,
       "mainEntityOfPage": { "@type": "WebPage", "@id": finalUrl },
+      "author": authorSchema,
       "publisher": {
         "@type": "Organization",
         "name": SITE_NAME,
         "url": SITE_URL,
-        "logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.png` }
+        "logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.png`, "width": 512, "height": 512 }
       },
       "articleSection": post.category?.name || "أخبار",
-      "inLanguage": "ar"
+      "inLanguage": "ar",
+      "isAccessibleForFree": true
     });
 
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    // كاش أطول (6 ساعات بدل ساعة) لأن هذي الصفحة تُخدَّم فقط للروبوتات
-    // (Google/فيسبوك/واتساب...) لأغراض المعاينة والفهرسة — لا تحتاج نفس درجة
-    // الحداثة اللي يحتاجها القارئ البشري، وكل تمديد يعني استدعاءات أقل لـ
-    // Vercel و Supabase عند تكرار الزحف على نفس الرابط.
-    res.setHeader("Cache-Control", "public, s-maxage=21600, stale-while-revalidate=3600");
+    res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=300");
 
     return res.status(200).send(`<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -140,7 +153,7 @@ export default async function handler(req, res) {
   <meta charset="UTF-8"/>
   <title>${title} | ${SITE_NAME}</title>
   <meta name="description" content="${description}"/>
-  <meta name="robots" content="index, follow"/>
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1"/>
   <meta property="og:type" content="article"/>
   <meta property="og:title" content="${title}"/>
   <meta property="og:description" content="${description}"/>
