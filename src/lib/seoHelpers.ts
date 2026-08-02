@@ -219,21 +219,20 @@ export function generateFAQSchema(post: SchemaPost) {
 }
 
 /**
- * تنبيه محركات البحث (Google/Bing) بوجود sitemap محدّث
+ * تنبيه محركات البحث بوجود sitemap محدّث.
+ *
+ * ملاحظة: جوجل ألغت نهائياً endpoint الـ"ping" (google.com/ping?sitemap=) منذ
+ * يونيو 2023 — يرجع الآن 404. بينج ألغت نظيره نهاية 2021 واستبدلته ببروتوكول
+ * IndexNow. الاستدعاءات القديمة هنا كانت تستخدم mode:"no-cors" فتبدو ناجحة
+ * دائماً بغض النظر عن حالة الاستجابة الفعلية — لذلك حذفناها بدل إبقائها كوهم نجاح.
+ *
+ * الفهرسة الفعلية الآن تتم عبر:
+ *  - IndexNow (بينج/ياندكس/Naver/Seznam) — تلقائياً من داخل edge function
+ *    "google-indexing" عند كل استدعاء لها (وأيضاً من /api/ping-sitemap كمسح شامل).
+ *  - Google Search Console + sitemap لجوجل تحديداً (لا بديل فوري لها حالياً).
+ *
+ * أبقينا هذه الدالة بنفس التوقيع (no-op) حتى لا نكسر أي كود يستدعيها.
  */
-export async function pingSearchEngines(sitemapUrl: string): Promise<{ google: boolean; bing: boolean }> {
-  const results = { google: false, bing: false };
-  try {
-    await fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`, { method: "GET", mode: "no-cors" });
-    results.google = true;
-  } catch (e) {
-    console.error("Google ping failed:", e);
-  }
-  try {
-    await fetch(`https://www.bing.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`, { method: "GET", mode: "no-cors" });
-    results.bing = true;
-  } catch (e) {
-    console.error("Bing ping failed:", e);
-  }
-  return results;
+export async function pingSearchEngines(_sitemapUrl: string): Promise<{ google: boolean; bing: boolean }> {
+  return { google: false, bing: false };
 }
