@@ -358,11 +358,11 @@ const Article = () => {
               />
             </div>
           ) : (
-            <div className="aspect-video">
+            <div className="bg-muted">
               <img
                 src={article.featured_image}
                 alt={article.title}
-                className="w-full h-full object-cover"
+                className="w-full h-auto"
                 loading="eager"
                 fetchPriority="high"
                 decoding="async"
