@@ -596,6 +596,13 @@ const PostEditor = () => {
       const slug = result?.slug;
 
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
+      // إبطال كاش الواجهة الرئيسية والأقسام والأكثر قراءة حتى تُحدَّث فوراً
+      // بعد الحفظ/النشر/التعديل، بدل انتظار انتهاء staleTime (٥ دقائق) في usePosts.ts
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["featured-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["most-read-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["posts-by-category"] });
+      queryClient.invalidateQueries({ queryKey: ["post", slug] });
       toast.success(isNew ? "تم إنشاء الخبر بنجاح" : "تم حفظ التغييرات");
       if (isNew) localStorage.removeItem(DRAFT_KEY);
 

@@ -56,6 +56,12 @@ const Posts = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-posts"] });
+      // إبطال كاش الواجهة الرئيسية والأقسام والأكثر قراءة حتى تُحدَّث فوراً
+      // بعد الحذف، بدل انتظار انتهاء staleTime (٥ دقائق) في usePosts.ts
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["featured-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["most-read-posts"] });
+      queryClient.invalidateQueries({ queryKey: ["posts-by-category"] });
       toast.success("تم حذف الخبر بنجاح");
       setDeleteId(null);
     },
