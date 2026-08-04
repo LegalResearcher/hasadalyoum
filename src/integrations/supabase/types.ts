@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      _keep_alive: {
+        Row: {
+          id: number
+          pinged_at: string
+        }
+        Insert: {
+          id?: number
+          pinged_at?: string
+        }
+        Update: {
+          id?: number
+          pinged_at?: string
+        }
+        Relationships: []
+      }
       ad_banners: {
         Row: {
           created_at: string
