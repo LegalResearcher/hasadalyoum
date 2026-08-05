@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getPostPath } from "@/lib/postUrl";
 
 /**
  * يتعامل مع الروابط القديمة بصيغة /news/:slug (نمط شائع في الأنظمة الإخبارية القديمة
- * وبعض روابط "اقرأ أيضاً" المحفوظة سابقاً) ويُحوّلها للصيغة الحالية /article/:slug
+ * وبعض روابط "اقرأ أيضاً" المحفوظة سابقاً) ويُحوّلها مباشرة للرابط الكنسي
+ * /YYYY/MM/DD/slug (بدون المرور بـ /article/:slug كخطوة وسيطة)
  */
 const NewsSlugRedirect = () => {
   const { slug } = useParams();
@@ -31,7 +33,7 @@ const NewsSlugRedirect = () => {
       try {
         const { data: post, error: fetchError } = await supabase
           .from("posts")
-          .select("id, slug")
+          .select("id, slug, created_at, published_at")
           // بعض الروابط القديمة قد تحتوي على المعرّف (id) بدل الرابط (slug)
           // ملاحظة: لا يمكن دمجهما في استعلام OR واحد لأن عمود id من نوع UUID،
           // وأي قيمة غير صالحة كـ UUID تُسقط الاستعلام بالكامل (حتى مطابقة الـ slug الصحيحة)
@@ -45,7 +47,7 @@ const NewsSlugRedirect = () => {
           return;
         }
 
-        navigate(`/article/${post.slug || post.id}`, { replace: true });
+        navigate(getPostPath(post.slug || post.id, post.published_at || post.created_at), { replace: true });
       } catch (err) {
         console.error("Error redirecting /news/:slug:", err);
         setError(true);
