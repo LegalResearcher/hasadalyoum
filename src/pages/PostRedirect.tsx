@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getPostPath } from "@/lib/postUrl";
 
 /**
  * يتعامل مع الروابط القديمة بصيغة /post/:id (مثل أنظمة سابقة أو WordPress)
- * ويُحوّل تلقائياً للرابط الجديد /article/:slug — لحماية SEO وعدم فقدان
- * الزيارات/الباك لينكات القادمة من جوجل أو منشورات تواصل اجتماعي قديمة
+ * ويُحوّل تلقائياً للرابط الكنسي /YYYY/MM/DD/slug مباشرة (لا نمرّ بـ
+ * /article/:slug كخطوة وسيطة — تقليل عدد القفزات يخدم الفهرسة والسرعة).
+ * ملاحظة: في الإنتاج vercel.json يعترض /post/:id بـ 301 حقيقي عبر
+ * api/post-redirect.js قبل وصول الطلب لهذا المكوّن أصلاً؛ هذا المكوّن
+ * يبقى fallback فقط (مثلاً أثناء التطوير المحلي).
  */
 const PostRedirect = () => {
   const { id } = useParams();
@@ -22,7 +26,7 @@ const PostRedirect = () => {
       try {
         const { data: post, error: fetchError } = await supabase
           .from("posts")
-          .select("id, slug")
+          .select("id, slug, created_at, published_at")
           .eq("id", id)
           .maybeSingle();
 
@@ -31,7 +35,7 @@ const PostRedirect = () => {
           return;
         }
 
-        navigate(`/article/${post.slug || post.id}`, { replace: true });
+        navigate(getPostPath(post.slug || post.id, post.published_at || post.created_at), { replace: true });
       } catch (err) {
         console.error("Error redirecting /post/:id:", err);
         setError(true);
