@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Eye, TrendingUp, ChevronLeft } from "lucide-react";
 import { useMostReadPosts } from "@/hooks/usePosts";
+import { getPostPath } from "@/lib/postUrl";
 
 interface MostReadProps {
   limit?: number;
@@ -45,7 +46,7 @@ const MostRead = ({ limit = 6, showHeading = true }: MostReadProps) => {
         {posts.map((post, index) => (
           <Link
             key={post.id}
-            to={`/article/${post.slug}`}
+            to={getPostPath(post.slug, post.created_at)}
             className="group relative bg-card rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-border overflow-hidden"
           >
             <div className="relative aspect-[16/9] overflow-hidden bg-muted flex items-center justify-center">
