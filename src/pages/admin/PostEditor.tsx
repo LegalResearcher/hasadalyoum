@@ -547,8 +547,14 @@ const PostEditor = () => {
         }
       }
 
+      // ⚠️ حماية إلزامية: لا يجوز أبدًا حفظ خبر بـ slug فاضي (يسبب 404 على الموقع)
+      const safeSlug = (rest.slug && rest.slug.trim())
+        ? rest.slug.trim()
+        : `${generateSlug(rest.title) || "post"}-${Date.now().toString(36)}`;
+
       const postData: any = {
         ...rest,
+        slug: safeSlug,
         featured_image: finalImageUrl,
         meta_title: rest.meta_title || rest.title.slice(0, 60),
         meta_description: rest.meta_description || rest.excerpt || rest.content.replace(/<[^>]*>/g, "").slice(0, 160),
