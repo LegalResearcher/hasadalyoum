@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Post } from "@/hooks/usePosts";
+import { getPostPath } from "@/lib/postUrl";
 
 interface NewsCardProps {
   post: Post;
@@ -23,7 +24,7 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
 
   if (variant === "opinion") {
     return (
-      <Link to={`/article/${post.slug}`} className="block group">
+      <Link to={getPostPath(post.slug, post.created_at)} className="block group">
         <div className="border-t border-border pt-4">
           <div className="flex items-center gap-3 mb-3">
             {post.author?.avatar_url ? (
@@ -55,7 +56,7 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
   if (variant === "horizontal") {
     return (
       <Link
-        to={`/article/${post.slug}`}
+        to={getPostPath(post.slug, post.created_at)}
         className="flex gap-3 md:gap-4 group py-3 border-b border-border last:border-0"
       >
         <div className="w-24 h-20 sm:w-32 sm:h-24 flex-shrink-0 overflow-hidden bg-muted flex items-center justify-center">
@@ -80,7 +81,7 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
 
   if (variant === "small") {
     return (
-      <Link to={`/article/${post.slug}`} className="block group">
+      <Link to={getPostPath(post.slug, post.created_at)} className="block group">
         <div className="relative aspect-[4/3] overflow-hidden mb-3 bg-muted flex items-center justify-center">
           <img
             src={cardImage || "/logo.png"}
@@ -101,7 +102,7 @@ const NewsCard = ({ post, variant = "default" }: NewsCardProps) => {
 
   return (
     <Link
-      to={`/article/${post.slug}`}
+      to={getPostPath(post.slug, post.created_at)}
       className="block group"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-muted flex items-center justify-center">
