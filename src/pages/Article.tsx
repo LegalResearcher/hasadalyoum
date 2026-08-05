@@ -9,6 +9,7 @@ import { usePostBySlug, useIncrementPostView, useMostReadPosts } from "@/hooks/u
 import type { Post } from "@/hooks/usePosts";
 import NewsCard from "@/components/news/NewsCard";
 import VideoEmbed from "@/components/news/VideoEmbed";
+import { getPostPath } from "@/lib/postUrl";
 import { Facebook, Copy, MessageCircle, Send, Share2, Clock, Eye } from "lucide-react";
 import { toast } from "sonner";
 import {
