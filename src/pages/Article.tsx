@@ -16,7 +16,6 @@ import {
   SITE_URL,
   generateCanonicalUrl,
   generateNewsArticleSchema,
-  generateFAQSchema,
 } from "@/lib/seoHelpers";
 
 // ===== التوقيع الثابت لقنوات التواصل =====
@@ -254,7 +253,6 @@ const Article = () => {
   const metaDescription = article.meta_description || article.excerpt || article.title;
   const shareImage = article.featured_image || undefined;
   const newsArticleSchema = generateNewsArticleSchema(article);
-  const faqSchema = generateFAQSchema(article);
 
   return (
     <Layout>
@@ -277,7 +275,16 @@ const Article = () => {
         {shareImage && <meta name="twitter:image" content={shareImage} />}
         <meta name="author" content={article.author?.name || SITE_NAME} />
         <script type="application/ld+json">{JSON.stringify(newsArticleSchema)}</script>
-        {faqSchema && <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>}
+        {/* FAQPage schema أُزيلت من هنا (أغسطس 2026): جوجل ألغت نهائياً ظهور
+            FAQ rich results بتاريخ 7 مايو 2026 لكل المواقع بلا استثناء، ولم
+            يعد هناك أي فائدة ظاهرة بنتائج البحث من هذا الـ schema. كما أنه
+            كان يُبنى تلقائياً من عناوين h2/h3 داخل المقال دون وجود أي واجهة
+            أسئلة-وأجوبة ظاهرة فعلياً بالصفحة تطابقه — وهذا التعارض بين بيانات
+            منظّمة غير ظاهرة ومحتوى الصفحة الفعلي هو بالضبط ما تحذّر منه إرشادات
+            جوجل لمكافحة إساءة استخدام البيانات المنظّمة (structured data spam
+            policies)، بصرف النظر عن مسألة الـ rich result. دالة generateFAQSchema
+            بقيت بـ seoHelpers.ts دون استخدام — يمكن حذفها نهائياً أو ربطها
+            مستقبلاً بواجهة أسئلة-وأجوبة ظاهرة فعلياً إذا رغبتم بإحيائها. */}
       </Helmet>
 
       {/* Breadcrumb */}
@@ -549,7 +556,7 @@ const Article = () => {
             {mostReadPosts.map((post, index) => (
               <Link
                 key={post.id}
-                to={`/article/${post.slug}`}
+                to={getPostPath(post.slug, post.created_at)}
                 className="group relative bg-card rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-border overflow-hidden"
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-muted">
