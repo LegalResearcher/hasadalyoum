@@ -451,21 +451,30 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
 
   const computeAutoViews = (createdAt: string, isNewsReports: boolean, currentViews: number) => {
     const ageH = (Date.now() - new Date(createdAt).getTime()) / 3600000;
-    // قسم "أخبار وتقارير": المنطق الأصلي — باقي الأقسام: نفس البنية بنطاق مصغّر ضمن 126-683
-    let lo = isNewsReports ? 600 : 451;
-    let hi = isNewsReports ? 1500 : 683;
-    if (ageH < 1) { lo = isNewsReports ? 150 : 126; hi = isNewsReports ? 388 : 250; }
-    else if (ageH < 5) { lo = isNewsReports ? 455 : 251; hi = isNewsReports ? 700 : 450; }
-    const randomInRange = Math.floor(lo + Math.random() * (hi - lo));
-    // 🔒 ضمان التصاعد: كانت الدالة السابقة ترمي رقماً عشوائياً بلا أي علاقة
-    // بالقيمة الحالية، فكان "التحديث" ينزّل المشاهدات بنفس احتمالية رفعها.
-    // الآن: لو الخبر تجاوز أصلاً نطاق عمره الطبيعي (نما عضوياً أو بتحديث
-    // سابق)، نزيده بمقدار بسيط بدل تجاهل ذلك، وإلا نأخذ الأكبر بين الرقم
-    // العشوائي والقيمة الحالية — بأي الحالتين النتيجة لا تقل عن الحالي أبداً.
-    if (currentViews >= hi) {
+    // 📈 منحنى نمو تصاعدي "مشبع" (approach curve) بدل نطاقات ثابتة القفزات:
+    // القيمة تكبر باستمرار مع تقدّم عمر الخبر وتقترب تدريجياً من السقف دون
+    // أن تصله فوراً — فخبر عمره يوم وخبر عمره شهر ما يقعان بنفس الحوض العشوائي.
+    // maxCap: السقف النهائي التقريبي. minBase: قيمة خبر لحظي (عمره صفر).
+    // growthHalfLifeH: عدد الساعات حتى يقطع النصف من المسافة المتبقية للسقف
+    // (~96 ساعة/4 أيام هنا) — كل ما زاد الرقم كان النمو أبطأ وأكثر واقعية.
+    const maxCap = isNewsReports ? 3500 : 1600;
+    const minBase = isNewsReports ? 150 : 126;
+    // growthHalfLifeH لأخبار وتقارير مُعايَر يدوياً بحيث يصل المنحنى قرابة
+    // 1850 مشاهدة عند عمر 24 ساعة بالضبط (قبل الجيتر العشوائي).
+    const growthHalfLifeH = isNewsReports ? 34 : 60;
+    const progress = 1 - Math.exp(-ageH / growthHalfLifeH); // 0 → 1 مع الزمن
+    const curveTarget = minBase + progress * (maxCap - minBase);
+    // 🎲 جيتر فريد لكل خبر (±8% تقريباً) حتى لا تتشابه أرقام أخبار بنفس
+    // العمر تقريباً — كل خبر يحصل على مسار نمو مختلف قليلاً وواقعي.
+    const jittered = Math.floor(curveTarget * (0.92 + Math.random() * 0.16));
+    const value = Math.min(jittered, maxCap);
+    // 🔒 ضمان التصاعد: لا نرجع أبداً رقماً أقل من المشاهدات الحالية — لو
+    // الخبر تجاوز أصلاً منحنى عمره الطبيعي (نما عضوياً أو بتحديث سابق)،
+    // نزيده بمقدار بسيط بدل تجاهل ذلك أو تنزيله.
+    if (currentViews >= maxCap) {
       return currentViews + Math.floor(Math.random() * 30) + 5;
     }
-    return Math.max(randomInRange, currentViews);
+    return Math.max(value, currentViews);
   };
 
   const applyGrowth = async () => {
