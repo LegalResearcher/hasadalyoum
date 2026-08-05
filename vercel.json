@@ -4,6 +4,11 @@
       "source": "/post/:id",
       "destination": "/api/post-redirect?id=:id",
       "permanent": true
+    },
+    {
+      "source": "/article/:slug",
+      "destination": "/api/article-redirect?slug=:slug",
+      "permanent": true
     }
   ],
 
