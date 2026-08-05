@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getYemenDateParts } from '../_lib/yemenDate.js';
 
 /**
  * خلاصة RSS مخصصة لقسم/تصنيف معيّن - حصاد اليوم
@@ -56,10 +57,7 @@ export default async function handler(req, res) {
     }
 
     const xmlItems = (posts || []).map((post) => {
-      const date = new Date(post.published_at || post.created_at);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      const { year, month, day } = getYemenDateParts(post.published_at || post.created_at);
       const link = `${SITE_URL}/${year}/${month}/${day}/${post.slug || post.id}`;
       const description = post.excerpt || (post.content ? post.content.replace(/<[^>]*>/g, '').substring(0, 500) : post.title);
 
