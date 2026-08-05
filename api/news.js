@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { yemenDayToUtcRange } from "./_lib/yemenDate.js";
 
 const escapeHtml = (str) =>
   (str || '')
@@ -55,8 +56,12 @@ export default async function handler(req, res) {
     const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const startDate = new Date(year, month - 1, day, 0, 0, 0).toISOString();
-    const endDate   = new Date(year, month - 1, day, 23, 59, 59).toISOString();
+    // نحول تاريخ /YYYY/MM/DD المطلوب بالرابط (بتوقيت اليمن) لمدى UTC صحيح
+    // للاستعلام — قبل هذا الإصلاح كان الحساب يفترض توقيت السيرفر (UTC على
+    // Vercel) كأنه توقيت اليمن، فكانت أخبار منتصف الليل-٣ فجراً بتوقيت اليمن
+    // (٢١:٠٠-٢٣:٥٩ UTC) تفشل بالعثور عليها هنا رغم تطابق الـ slug تماماً،
+    // لأن نافذة البحث كانت تقع خارج التاريخ الفعلي المطلوب بالرابط.
+    const { startUtcIso: startDate, endUtcIso: endDate } = yemenDayToUtcRange(year, month, day);
 
     const decodedSlug = decodeURIComponent(slug);
 
