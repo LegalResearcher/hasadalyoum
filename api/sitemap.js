@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getYemenDateParts } from './_lib/yemenDate.js';
 
 // تشفير الأحرف الخاصة في XML فقط (& < > " ') — بدون تشفير الحروف العربية
 const escapeXml = (str) =>
@@ -22,7 +23,13 @@ export default async function handler(req, res) {
       .select("id, slug, created_at, updated_at, published_at")
       .eq("status", "published")
       .order("created_at", { ascending: false })
-      .limit(1000);
+      // ملاحظة: كان محدداً بـ 1000 سابقاً بينما قاعدة البيانات فيها أكثر من 1700
+      // خبر منشور — أي أن ~700 خبر قديم كانوا غائبين تماماً عن الفهرسة عبر
+      // sitemap.xml. حد جوجل الرسمي هو 50,000 رابط لكل ملف sitemap واحد.
+      // رفعناه إلى 45000 كهامش أمان (بمعدل نشر ~48 خبر/يوم هذا يكفي لأكثر من
+      // سنتين). عند الاقتراب من هذا الرقم مستقبلاً يجب التحويل لبنية
+      // sitemap index مع ملفات مجزّأة بدل رفع الرقم أكثر.
+      .limit(45000);
 
     if (error) throw error;
 
@@ -35,9 +42,7 @@ export default async function handler(req, res) {
       const priority   = ageInDays < 7  ? '0.9' : '0.6';
       const changefreq = ageInDays < 7  ? 'daily' : 'monthly';
 
-      const year  = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day   = String(date.getDate()).padStart(2, '0');
+      const { year, month, day } = getYemenDateParts(dateUsed);
 
       // ✅ لا نستخدم encodeURI — الروابط العربية مقبولة في XML و Google
       const fullUrl = escapeXml(`${SITE_URL}/${year}/${month}/${day}/${postSlug}`);
