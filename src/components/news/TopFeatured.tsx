@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useFeaturedPosts } from "@/hooks/usePosts";
+import { getPostPath } from "@/lib/postUrl";
 
 const TopFeatured = () => {
   const { data: posts, isLoading } = useFeaturedPosts(5);
@@ -31,7 +32,7 @@ const TopFeatured = () => {
     <section className="border-b border-border pb-8 md:pb-12 mb-8 md:mb-12">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
         {/* Lead story */}
-        <Link to={`/article/${lead.slug}`} className="lg:col-span-2 group block">
+        <Link to={getPostPath(lead.slug, lead.created_at)} className="lg:col-span-2 group block">
           <div className="relative aspect-[16/10] overflow-hidden bg-muted mb-5 flex items-center justify-center">
             <img
               src={
@@ -65,7 +66,7 @@ const TopFeatured = () => {
           {side.map((p, i) => (
             <Link
               key={p.id}
-              to={`/article/${p.slug}`}
+              to={getPostPath(p.slug, p.created_at)}
               className={`group block ${i === 0 ? "pb-5" : "py-5"}`}
             >
               <div className="relative aspect-[16/10] overflow-hidden bg-muted mb-3 flex items-center justify-center">
@@ -96,7 +97,7 @@ const TopFeatured = () => {
       {strip.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-10 mt-8 md:mt-10 pt-6 md:pt-8 border-t border-border">
           {strip.map((p) => (
-            <Link key={p.id} to={`/article/${p.slug}`} className="group block">
+            <Link key={p.id} to={getPostPath(p.slug, p.created_at)} className="group block">
               {p.category && (
                 <span className="text-[10px] uppercase tracking-[0.2em] text-accent font-semibold">
                   {p.category.name}
