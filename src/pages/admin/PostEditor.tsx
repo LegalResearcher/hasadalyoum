@@ -998,7 +998,7 @@ const PostEditor = () => {
                     <p className="text-xs text-gray-500 mb-2">معاينة نتيجة البحث في Google:</p>
                     <div className="bg-white p-3 rounded border">
                       <p className="text-blue-700 text-lg hover:underline cursor-pointer truncate">{formData.meta_title || formData.title || "عنوان المقال"}</p>
-                      <p className="text-green-700 text-sm" dir="ltr">hasad-alyoum.com/article/{formData.slug || "..."}</p>
+                      <p className="text-green-700 text-sm" dir="ltr">{getPostUrl(formData.slug || "...", new Date().toISOString()).replace(/^https?:\/\//, "")}</p>
                       <p className="text-gray-600 text-sm mt-1 line-clamp-2">{formData.meta_description || formData.excerpt || "وصف المقال..."}</p>
                     </div>
                     <p className="text-xs text-gray-500 mt-4 mb-2">معاينة المشاركة على Facebook:</p>
