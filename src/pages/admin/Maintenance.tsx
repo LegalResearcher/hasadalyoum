@@ -413,7 +413,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
   const [maxViews, setMaxViews] = useState(800);
   const [targetSpecific, setTargetSpecific] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPosts, setSelectedPosts] = useState<Array<{ id: string; title: string; views: number }>>([]);
+  const [selectedPosts, setSelectedPosts] = useState<Array<{ id: string; title: string; views: number; created_at: string; categoryName?: string; manual: boolean }>>([]);
   const [updating, setUpdating] = useState(false);
 
   const { data: searchResults } = useQuery({
@@ -421,7 +421,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
     queryFn: async () => {
       if (!searchTerm.trim()) return [];
       const { data } = await supabase
-        .from("posts").select("id, title, views_count")
+        .from("posts").select("id, title, views_count, created_at, category:categories(name)")
         .ilike("title", `%${searchTerm}%`).limit(10);
       return data || [];
     },
@@ -482,7 +482,19 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
     try {
       let targets: Array<{ id: string; created_at: string; views_count: number; target?: number; isNewsReports?: boolean }> = [];
       if (targetSpecific) {
-        targets = selectedPosts.map((p) => ({ id: p.id, created_at: "", views_count: 0, target: p.views }));
+        // قبل الإصلاح: كنا نضع target: p.views دائماً (نفس الرقم الحالي)،
+        // فكان "تحديث المستهدف" يعيد كتابة نفس القيمة بلا أي نمو فعلي إلا
+        // لو المستخدم كتب رقم يدوي بنفسه. الآن: نستخدم target فقط لو
+        // المستخدم عدّل الرقم يدوياً (manual)، وإلا نمرر created_at
+        // والتصنيف الحقيقيين ليشتغل نفس منحنى النمو الذكي المستخدم بالوضع
+        // الجماعي (autoGrowth / النطاق العشوائي).
+        targets = selectedPosts.map((p) => ({
+          id: p.id,
+          created_at: p.created_at,
+          views_count: p.views,
+          isNewsReports: p.categoryName === "أخبار وتقارير",
+          target: p.manual ? p.views : undefined,
+        }));
       } else {
         const data = await fetchAllRows<any>((from, to) => {
           let q = supabase.from("posts").select("id, created_at, views_count, category:categories(name)");
@@ -724,7 +736,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
                     {searchResults.map((r) => (
                       <button key={r.id} className="w-full text-right px-3 py-2 hover:bg-muted text-sm" onClick={() => {
                         if (!selectedPosts.find(p => p.id === r.id)) {
-                          setSelectedPosts([...selectedPosts, { id: r.id, title: r.title, views: r.views_count || 0 }]);
+                          setSelectedPosts([...selectedPosts, { id: r.id, title: r.title, views: r.views_count || 0, created_at: (r as any).created_at, categoryName: (r as any).category?.name, manual: false }]);
                         }
                         setSearchTerm("");
                       }}>{r.title}</button>
@@ -738,7 +750,7 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
                         <span className="flex-1 text-sm truncate">{p.title}</span>
                         <Input type="number" className="w-24" value={p.views} onChange={(e) => {
                           const v = +e.target.value;
-                          setSelectedPosts(selectedPosts.map((sp, j) => j === i ? { ...sp, views: v } : sp));
+                          setSelectedPosts(selectedPosts.map((sp, j) => j === i ? { ...sp, views: v, manual: true } : sp));
                         }} />
                         <Button size="icon" variant="ghost" onClick={() => setSelectedPosts(selectedPosts.filter((_, j) => j !== i))}><X className="h-4 w-4" /></Button>
                       </div>
