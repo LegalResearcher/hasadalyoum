@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { getYemenDateParts } from './_lib/yemenDate.js';
 
 /**
  * /api/post-redirect?id=:id
@@ -38,10 +39,7 @@ export default async function handler(req, res) {
     }
 
     const dateUsed = post.published_at || post.created_at;
-    const date = new Date(dateUsed);
-    const year  = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day   = String(date.getDate()).padStart(2, '0');
+    const { year, month, day } = getYemenDateParts(dateUsed);
     const slug  = post.slug || post.id;
 
     const newUrl = `${SITE_URL}/${year}/${month}/${day}/${slug}`;
