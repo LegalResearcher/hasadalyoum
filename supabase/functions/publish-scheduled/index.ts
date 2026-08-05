@@ -6,12 +6,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// توقيت اليمن (Asia/Aden) — UTC+3 ثابت، بدون توقيت صيفي.
+// نفس المنطق المستخدم بالضبط في src/lib/postUrl.ts وapi/_lib/yemenDate.js —
+// لضمان أن هذه الدالة تحسب نفس التاريخ لنفس الخبر بكل مكان بالمشروع.
+// (دالة مستقلة هنا لأن Supabase Edge Functions بتوقيت Deno منفصلة النشر
+// عن مجلد api/ الخاص بـ Vercel، ولا يوجد مجلد _shared حالياً بالمشروع)
+const YEMEN_OFFSET_MS = 3 * 60 * 60 * 1000;
+
 // Helper to generate post URL
 function getPostUrl(post: { id: string; created_at: string; slug?: string | null; title?: string }): string {
-  const date = new Date(post.created_at);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const utcMs = new Date(post.created_at).getTime();
+  const yemenDate = new Date(utcMs + YEMEN_OFFSET_MS);
+  const year = yemenDate.getUTCFullYear();
+  const month = String(yemenDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(yemenDate.getUTCDate()).padStart(2, '0');
   const slug = post.slug || post.id;
   return `/${year}/${month}/${day}/${slug}`;
 }
