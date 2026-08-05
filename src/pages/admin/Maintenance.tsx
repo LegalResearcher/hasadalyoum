@@ -428,14 +428,44 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
     enabled: targetSpecific && searchTerm.length > 1,
   });
 
-  const computeAutoViews = (createdAt: string, isNewsReports: boolean) => {
+  // 📄 سوباباس يعيد 1000 صف كحد أقصى لكل طلب افتراضياً. مع أكثر من 1700
+  // خبر بالموقع، أي استعلام بلا ترقيم صفحات كان يتجاهل الباقي بصمت (بلا
+  // خطأ). هذه الدالة تجلب كل الصفوف عبر .range() على دفعات حتى تنتهي.
+  const PAGE_SIZE = 1000;
+  async function fetchAllRows<T>(
+    buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>
+  ): Promise<T[]> {
+    let all: T[] = [];
+    let from = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
+    return all;
+  }
+
+  const computeAutoViews = (createdAt: string, isNewsReports: boolean, currentViews: number) => {
     const ageH = (Date.now() - new Date(createdAt).getTime()) / 3600000;
     // قسم "أخبار وتقارير": المنطق الأصلي — باقي الأقسام: نفس البنية بنطاق مصغّر ضمن 126-683
     let lo = isNewsReports ? 600 : 451;
     let hi = isNewsReports ? 1500 : 683;
     if (ageH < 1) { lo = isNewsReports ? 150 : 126; hi = isNewsReports ? 388 : 250; }
     else if (ageH < 5) { lo = isNewsReports ? 455 : 251; hi = isNewsReports ? 700 : 450; }
-    return Math.floor(lo + Math.random() * (hi - lo));
+    const randomInRange = Math.floor(lo + Math.random() * (hi - lo));
+    // 🔒 ضمان التصاعد: كانت الدالة السابقة ترمي رقماً عشوائياً بلا أي علاقة
+    // بالقيمة الحالية، فكان "التحديث" ينزّل المشاهدات بنفس احتمالية رفعها.
+    // الآن: لو الخبر تجاوز أصلاً نطاق عمره الطبيعي (نما عضوياً أو بتحديث
+    // سابق)، نزيده بمقدار بسيط بدل تجاهل ذلك، وإلا نأخذ الأكبر بين الرقم
+    // العشوائي والقيمة الحالية — بأي الحالتين النتيجة لا تقل عن الحالي أبداً.
+    if (currentViews >= hi) {
+      return currentViews + Math.floor(Math.random() * 30) + 5;
+    }
+    return Math.max(randomInRange, currentViews);
   };
 
   const applyGrowth = async () => {
@@ -445,11 +475,13 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
       if (targetSpecific) {
         targets = selectedPosts.map((p) => ({ id: p.id, created_at: "", views_count: 0, target: p.views }));
       } else {
-        let q = supabase.from("posts").select("id, created_at, views_count, category:categories(name)");
-        if (growthCategory !== "all") q = q.eq("category_id", growthCategory);
-        if (growthFrom) q = q.gte("created_at", growthFrom);
-        const { data } = await q;
-        targets = (data || []).map((p: any) => ({
+        const data = await fetchAllRows<any>((from, to) => {
+          let q = supabase.from("posts").select("id, created_at, views_count, category:categories(name)");
+          if (growthCategory !== "all") q = q.eq("category_id", growthCategory);
+          if (growthFrom) q = q.gte("created_at", growthFrom);
+          return q.range(from, to);
+        });
+        targets = data.map((p: any) => ({
           id: p.id,
           created_at: p.created_at,
           views_count: p.views_count,
@@ -459,8 +491,8 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
       let updated = 0;
       for (const t of targets) {
         const v = t.target != null ? t.target :
-          autoGrowth ? computeAutoViews(t.created_at, !!t.isNewsReports) :
-          Math.floor(minViews + Math.random() * (maxViews - minViews));
+          autoGrowth ? computeAutoViews(t.created_at, !!t.isNewsReports, t.views_count || 0) :
+          Math.max(Math.floor(minViews + Math.random() * (maxViews - minViews)), t.views_count || 0);
         const { error } = await supabase.from("posts").update({ views_count: v }).eq("id", t.id);
         if (!error) updated++;
       }
@@ -479,11 +511,12 @@ a { color: #1A56CC; text-decoration: underline; font-weight: 600; }
       if (targetSpecific) {
         targets = selectedPosts.map((p) => ({ id: p.id, views_count: p.views }));
       } else {
-        let q = supabase.from("posts").select("id, views_count");
-        if (growthCategory !== "all") q = q.eq("category_id", growthCategory);
-        if (growthFrom) q = q.gte("created_at", growthFrom);
-        const { data } = await q;
-        targets = (data || []) as any;
+        targets = await fetchAllRows<any>((from, to) => {
+          let q = supabase.from("posts").select("id, views_count");
+          if (growthCategory !== "all") q = q.eq("category_id", growthCategory);
+          if (growthFrom) q = q.gte("created_at", growthFrom);
+          return q.range(from, to);
+        });
       }
       let updated = 0;
       for (const t of targets) {
