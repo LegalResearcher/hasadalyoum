@@ -19,3 +19,20 @@ export function getPostUrl(slug: string, createdAt: string): string {
 
   return `${SITE_URL}/${year}/${month}/${day}/${slug}`;
 }
+
+/**
+ * نفس getPostUrl لكن يُرجع المسار النسبي فقط (بدون الدومين) — للاستخدام
+ * داخل <Link to="..."> بمكونات الموقع (NewsCard, HeroSlider, MostRead,
+ * TopFeatured, Article...) بدل الرابط القديم /article/:slug.
+ *
+ * لماذا هذا مهم لفهرسة جوجل: كل هذه الروابط الداخلية كانت تشير سابقاً إلى
+ * /article/:slug، وهو مسار تحويل بجافاسكريبت فقط بالمتصفح (لا يوجد 301
+ * حقيقي)، وغير مشمول بقاعدة اكتشاف الزواحف (bot-detection) في vercel.json.
+ * فكان Googlebot عند تتبعه لأي رابط داخلي بالموقع يصطدم بصفحة index.html
+ * الفارغة (SPA shell) بدل صفحة SSR الغنية بالـ schema المخصصة لكل خبر —
+ * ما كان يُبطئ اكتشاف الروابط الجديدة وفهرستها الفعلية رغم أن كل شيء آخر
+ * بالبنية التحتية (sitemap, IndexNow, Google Indexing API) يعمل فوراً.
+ */
+export function getPostPath(slug: string, createdAt: string): string {
+  return getPostUrl(slug, createdAt).replace(SITE_URL, "");
+}
