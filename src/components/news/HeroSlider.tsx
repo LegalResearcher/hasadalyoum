@@ -3,6 +3,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useFeaturedPosts } from "@/hooks/usePosts";
+import { getPostPath } from "@/lib/postUrl";
 
 const HeroSlider = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -45,7 +46,7 @@ const HeroSlider = () => {
       {slides.map((slide, index) => (
         <Link
           key={slide.id}
-          to={slide.slug !== "#" ? `/article/${slide.slug}` : "#"}
+          to={slide.slug !== "#" && "created_at" in slide ? getPostPath(slide.slug, slide.created_at) : "#"}
           className={cn(
             "absolute inset-0 transition-opacity duration-700",
             index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
