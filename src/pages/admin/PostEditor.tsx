@@ -245,6 +245,15 @@ const PostEditor = () => {
   // ─── تتبع ما إذا كان النشر جديداً (من draft/scheduled → published) ──────────
   const prevStatusRef = useRef<string | null>(null);
 
+  // ─── حماية من تعارض thumbnail_image القديمة مع featured_image الجديدة ──────
+  // نخزّن هنا رابط الصورة الرئيسية التي وُلّدت المصغّرة الحالية (thumbnail_image)
+  // لأجلها فعلياً. لو تغيّرت featured_image عن هذه القيمة (برفع ملف جديد، لصق
+  // رابط يدوي، أو حتى بيانات قديمة موروثة من قبل هذا الإصلاح) ولم تُولَّد مصغّرة
+  // جديدة تطابقها بهذه الجلسة، يعتبرها saveMutation "غير موثوقة" ويصفّرها بدل
+  // إبقاء صورة قديمة تظهر بالرئيسية رغم تحديث الخبر — هذا يصلح تلقائياً أي بيانات
+  // قديمة متعارضة بمجرد إعادة حفظ الخبر، حتى لو المستخدم لم يلمس الصورة إطلاقاً.
+  const thumbnailMatchesImageRef = useRef<string | null>(null);
+
   const { data: categories } = useCategories();
   const { data: authors } = useAuthors();
 
@@ -544,6 +553,17 @@ const PostEditor = () => {
       // العلامة المائية: رفع صورة منفصلة عند الحفظ وحفظ URL الجديد
       let finalImageUrl = rest.featured_image;
       let finalThumbnailUrl = rest.thumbnail_image;
+
+      // 🛡️ حماية من تعارض thumbnail_image مع featured_image: لا نثق بـ
+      // thumbnail_image إلا إذا وُلّدت فعلياً لنفس رابط featured_image الحالي
+      // بهذه الجلسة (thumbnailMatchesImageRef). أي قيمة أخرى — سواء موروثة من
+      // بيانات قديمة سابقة لهذا الإصلاح، أو من تعديل يدوي لم يُسجَّل بشكل
+      // متزامن — تُصفَّر هنا، فتعتمد بطاقات الرئيسية تلقائياً على featured_image
+      // الجديدة عبر الـ fallback الموجود بالواجهة بدل عرض صورة قديمة.
+      if (finalThumbnailUrl && thumbnailMatchesImageRef.current !== finalImageUrl) {
+        finalThumbnailUrl = null;
+      }
+
       if (enableWatermark && rest.featured_image && watermarkLogoUrl) {
         const usingHeadline = watermarkStyle === 'headline';
         try {
@@ -768,6 +788,10 @@ const PostEditor = () => {
           }
         } catch { /* لو فشل توليد المصغّرة، نكتفي بمسح القديمة أدناه ليعتمد على featured_image الجديدة */ }
       }
+
+      // نُسجّل أن المصغّرة الجديدة (إن وُجدت) تطابق فعلياً هذه الصورة الرئيسية
+      // تحديداً، حتى يثق saveMutation بها ولا يصفّرها كوقاية من التعارض.
+      thumbnailMatchesImageRef.current = newThumbnailUrl ? urlData.publicUrl : null;
 
       setFormData(prev => ({ ...prev, featured_image: urlData.publicUrl, thumbnail_image: newThumbnailUrl }));
       if (enableWatermark) regenerateWatermarkPreview(urlData.publicUrl);
@@ -1005,7 +1029,7 @@ const PostEditor = () => {
                       </div>
                     </div>
                   )}
-                  <Input value={formData.featured_image} onChange={(e) => setFormData(p => ({ ...p, featured_image: e.target.value, thumbnail_image: null }))} placeholder="أو أدخل رابط الصورة" dir="ltr" />
+                  <Input value={formData.featured_image} onChange={(e) => { thumbnailMatchesImageRef.current = null; setFormData(p => ({ ...p, featured_image: e.target.value, thumbnail_image: null })); }} placeholder="أو أدخل رابط الصورة" dir="ltr" />
                 </div>
 
                 <div className="space-y-2 pt-2 border-t">
