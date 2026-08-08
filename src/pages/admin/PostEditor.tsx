@@ -228,9 +228,6 @@ const PostEditor = () => {
   const [showSeoPreview, setShowSeoPreview] = useState(false);
   const [autoSeedViewsOnPublish, setAutoSeedViewsOnPublish] = useState(false);
   const draftRestoreCheckedRef = useRef(false);
-  // آخر نسخة من formData، تُستخدم عند الخروج من الصفحة (unmount) حيث لا يمكن
-  // الاعتماد على formData بالإغلاق (closure) داخل useEffect لأنها قد تكون قديمة
-  const formDataRef = useRef(formData);
   // معرّف المسودة التي أُنشئت عند الخروج (إن وُجدت)، لتفادي إنشاء نسخة مكررة
   // لو تم استدعاء حفظ الخروج أكثر من مرة (مثلاً: ضغط زر الإغلاق ثم unmount)
   const exitDraftIdRef = useRef<string | null>(null);
@@ -282,6 +279,9 @@ const PostEditor = () => {
     pinned_order: null as number | null,
     publication_date: "",
   });
+  // آخر نسخة من formData، تُستخدم عند الخروج من الصفحة (unmount) حيث لا يمكن
+  // الاعتماد على formData بالإغلاق (closure) داخل useEffect لأنها قد تكون قديمة
+  const formDataRef = useRef(formData);
   formDataRef.current = formData;
 
   const { data: post, isLoading: postLoading } = useQuery({
