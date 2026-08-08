@@ -17,7 +17,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { useAuthors } from "@/hooks/useAuthors";
 import { useAuth } from "@/hooks/useAuth";
 import { translateError } from "@/lib/errorTranslator";
-import { optimizeImage, isOptimizableImage, formatFileSize } from "@/lib/imageOptimizer";
+import { optimizeImage, isOptimizableImage, formatFileSize, generateThumbnail } from "@/lib/imageOptimizer";
 import { applyWatermark, generateWatermarkPreview } from "@/lib/imageWatermark";
 import { applyHeadlineDesign, generateHeadlineDesignPreview } from "@/lib/imageHeadlineDesign";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -227,8 +227,20 @@ const PostEditor = () => {
   const [preSplitContent, setPreSplitContent] = useState<{ content: string; excerpt: string } | null>(null);
   const [showSeoPreview, setShowSeoPreview] = useState(false);
   const [autoSeedViewsOnPublish, setAutoSeedViewsOnPublish] = useState(false);
-  const lastAutoSaveRef = useRef<number>(0);
   const draftRestoreCheckedRef = useRef(false);
+  // آخر نسخة من formData، تُستخدم عند الخروج من الصفحة (unmount) حيث لا يمكن
+  // الاعتماد على formData بالإغلاق (closure) داخل useEffect لأنها قد تكون قديمة
+  const formDataRef = useRef(formData);
+  // معرّف المسودة التي أُنشئت عند الخروج (إن وُجدت)، لتفادي إنشاء نسخة مكررة
+  // لو تم استدعاء حفظ الخروج أكثر من مرة (مثلاً: ضغط زر الإغلاق ثم unmount)
+  const exitDraftIdRef = useRef<string | null>(null);
+
+  // ─── تتبع التعديل اليدوي: طالما المستخدم ما لمس الحقل بنفسه، يستمر الرابط
+  // (slug) والملخص (excerpt) بالتحديث التلقائي مع كل تغيير بالعنوان/المحتوى،
+  // حتى لو الخبر منشور مسبقًا وله قيمة محفوظة أصلاً. بمجرد ما يعدّل المستخدم
+  // الحقل يدويًا، يتوقف التحديث التلقائي لهذا الحقل لبقية الجلسة.
+  const slugTouchedRef = useRef(false);
+  const excerptTouchedRef = useRef(false);
 
   // ─── تتبع ما إذا كان النشر جديداً (من draft/scheduled → published) ──────────
   const prevStatusRef = useRef<string | null>(null);
@@ -242,6 +254,7 @@ const PostEditor = () => {
     excerpt: "",
     content: "",
     featured_image: "",
+    thumbnail_image: null as string | null,
     gallery_images: [] as string[],
     category_id: "",
     author_id: "",
@@ -260,6 +273,7 @@ const PostEditor = () => {
     pinned_order: null as number | null,
     publication_date: "",
   });
+  formDataRef.current = formData;
 
   const { data: post, isLoading: postLoading } = useQuery({
     queryKey: ["post", id],
@@ -279,12 +293,15 @@ const PostEditor = () => {
       const localDate = new Date(d.getTime() - tzOff).toISOString().slice(0, 16);
       // حفظ الحالة السابقة للخبر قبل أي تعديل
       prevStatusRef.current = post.status || "draft";
+      slugTouchedRef.current = false;
+      excerptTouchedRef.current = false;
       setFormData({
         title: post.title || "",
         slug: post.slug || "",
         excerpt: post.excerpt || "",
         content: post.content || "",
         featured_image: post.featured_image || "",
+        thumbnail_image: (post as any).thumbnail_image || null,
         gallery_images: (post as any).gallery_images || [],
         category_id: post.category_id || "",
         author_id: post.author_id || "",
@@ -359,7 +376,7 @@ const PostEditor = () => {
   const handleTitleChange = (title: string) => {
     setFormData(prev => ({
       ...prev, title,
-      slug: prev.slug || generateSEOSlug(title),
+      slug: slugTouchedRef.current ? prev.slug : generateSEOSlug(title),
       meta_title: prev.meta_title || generateMetaTitle(title),
     }));
   };
@@ -369,7 +386,7 @@ const PostEditor = () => {
     const keywords = generateKeywords(formData.title, content);
     setFormData(prev => ({
       ...prev, content,
-      excerpt: prev.excerpt || excerpt,
+      excerpt: excerptTouchedRef.current ? prev.excerpt : excerpt,
       meta_description: prev.meta_description || excerpt.slice(0, 160),
       meta_keywords: prev.meta_keywords || keywords,
     }));
@@ -526,6 +543,7 @@ const PostEditor = () => {
 
       // العلامة المائية: رفع صورة منفصلة عند الحفظ وحفظ URL الجديد
       let finalImageUrl = rest.featured_image;
+      let finalThumbnailUrl = rest.thumbnail_image;
       if (enableWatermark && rest.featured_image && watermarkLogoUrl) {
         const usingHeadline = watermarkStyle === 'headline';
         try {
@@ -538,6 +556,10 @@ const PostEditor = () => {
           if (!wmErr) {
             const { data: wmUrl } = supabase.storage.from("post-images").getPublicUrl(wmFileName);
             finalImageUrl = wmUrl.publicUrl;
+            // 🔄 صورة الخبر تغيّرت (شريط عنوان جديد) — لا نُبقي المصغّرة القديمة تشير
+            // لتصميم سابق مختلف؛ نفرّغها لتعتمد بطاقات القوائم على finalImageUrl الجديدة
+            // مباشرة عبر الـ fallback الموجود أصلاً بالواجهة (thumbnail_image || featured_image).
+            finalThumbnailUrl = null;
             toast.success(usingHeadline ? "تم تصميم صورة الخبر بنجاح" : "تم إنشاء صورة المشاركة بنجاح");
           } else {
             toast.error("فشل رفع صورة العلامة المائية، سيتم استخدام الصورة الأصلية");
@@ -556,6 +578,7 @@ const PostEditor = () => {
         ...rest,
         slug: safeSlug,
         featured_image: finalImageUrl,
+        thumbnail_image: finalThumbnailUrl,
         meta_title: rest.meta_title || rest.title.slice(0, 60),
         meta_description: rest.meta_description || rest.excerpt || rest.content.replace(/<[^>]*>/g, "").slice(0, 160),
         meta_keywords: rest.meta_keywords || generateKeywords(rest.title, rest.content),
@@ -677,20 +700,35 @@ const PostEditor = () => {
     onError: (error: any) => { toast.error(translateError(error)); },
   });
 
-  // حفظ تلقائي كل 30 ثانية
+  // حفظ كمسودة فقط عند الخروج من صفحة "خبر جديد" (وليس أثناء الكتابة إطلاقاً):
+  // يُستدعى إما عند ضغط زر الإغلاق/الرجوع، أو تلقائياً عند مغادرة الصفحة (unmount)
+  // لأي سبب آخر (تنقّل داخل لوحة الإدارة). لا يُنشئ أكثر من صف واحد بالقاعدة حتى
+  // لو استُدعي أكثر من مرة، لأنه يحدّث نفس الصف (exitDraftIdRef) بدل تكراره.
+  const saveDraftOnExit = async () => {
+    const data = formDataRef.current;
+    if (!isNew) return; // التحرير الحالي لخبر موجود له مسار حفظ يدوي واضح أصلاً
+    if (!data.title.trim()) return; // لا شيء يستحق الحفظ
+    if (data.status !== "draft") return; // إن كان قد نُشر بالفعل عبر زر الحفظ اليدوي، لا داعي لأي حفظ إضافي هنا
+    try {
+      if (exitDraftIdRef.current) {
+        await supabase.from("posts").update({
+          title: data.title, slug: data.slug || `auto-${Date.now()}`,
+          content: data.content, excerpt: data.excerpt,
+        }).eq("id", exitDraftIdRef.current);
+      } else {
+        const { data: inserted } = await supabase.from("posts").insert({
+          title: data.title, slug: data.slug || `auto-${Date.now()}`,
+          content: data.content, excerpt: data.excerpt, status: "draft", user_id: user?.id || null,
+        }).select("id").single();
+        if (inserted) exitDraftIdRef.current = inserted.id;
+      }
+    } catch { /* حفظ صامت — الأولوية لعدم تعطيل خروج المستخدم من الصفحة */ }
+  };
+
   useEffect(() => {
-    if (!isNew) return;
-    const interval = setInterval(async () => {
-      if (formData.status !== "draft" || !formData.title.trim()) return;
-      if (Date.now() - lastAutoSaveRef.current < 25000) return;
-      lastAutoSaveRef.current = Date.now();
-      try {
-        await supabase.from("posts").insert({ title: formData.title, slug: formData.slug || `auto-${Date.now()}`, content: formData.content, excerpt: formData.excerpt, status: "draft", user_id: user?.id || null });
-        toast.success("تم الحفظ التلقائي", { duration: 1500 });
-      } catch { }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [isNew, formData, user]);
+    return () => { saveDraftOnExit(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -714,7 +752,24 @@ const PostEditor = () => {
       const { error: uploadError } = await supabase.storage.from("post-images").upload(fileName, fileToUpload, { contentType });
       if (uploadError) { toast.error(translateError(uploadError)); return; }
       const { data: urlData } = supabase.storage.from("post-images").getPublicUrl(fileName);
-      setFormData(prev => ({ ...prev, featured_image: urlData.publicUrl }));
+
+      // 🔄 تحديث thumbnail_image فوراً مع كل صورة جديدة: بطاقات الرئيسية/الأقسام/الأكثر
+      // قراءة تعرض thumbnail_image بالأولوية على featured_image، فلو تُرك القديم كما هو
+      // بعد استبدال الصورة، تستمر الواجهة الرئيسية بعرض الصورة القديمة رغم أن الخبر تحدّث.
+      let newThumbnailUrl: string | null = null;
+      if (isOptimizableImage(file)) {
+        try {
+          const thumb = await generateThumbnail(file);
+          const thumbFileName = `thumb-${Date.now()}.webp`;
+          const { error: thumbErr } = await supabase.storage.from("post-images").upload(thumbFileName, thumb.blob, { contentType: "image/webp" });
+          if (!thumbErr) {
+            const { data: thumbUrlData } = supabase.storage.from("post-images").getPublicUrl(thumbFileName);
+            newThumbnailUrl = thumbUrlData.publicUrl;
+          }
+        } catch { /* لو فشل توليد المصغّرة، نكتفي بمسح القديمة أدناه ليعتمد على featured_image الجديدة */ }
+      }
+
+      setFormData(prev => ({ ...prev, featured_image: urlData.publicUrl, thumbnail_image: newThumbnailUrl }));
       if (enableWatermark) regenerateWatermarkPreview(urlData.publicUrl);
       toast.success("تم رفع الصورة بنجاح");
     } catch (error: any) { toast.error(translateError(error)); }
@@ -770,7 +825,7 @@ const PostEditor = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/admin/posts")}>
+            <Button variant="ghost" size="icon" onClick={async () => { await saveDraftOnExit(); navigate("/admin/posts"); }}>
               <ArrowRight className="h-5 w-5" />
             </Button>
             <h1 className="text-2xl font-bold">{isNew ? "خبر جديد" : "تعديل الخبر"}</h1>
@@ -848,13 +903,13 @@ const PostEditor = () => {
                       )}
                       {formData.excerpt && !preSplitContent && (
                         <Button type="button" variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-destructive"
-                          onClick={() => setFormData(p => ({ ...p, excerpt: "" }))}>
+                          onClick={() => { excerptTouchedRef.current = false; setFormData(p => ({ ...p, excerpt: "" })); }}>
                           <Eraser className="h-3 w-3 ml-1" /> مسح الملخص
                         </Button>
                       )}
                     </div>
                   </div>
-                  <Textarea value={formData.excerpt} onChange={(e) => setFormData(p => ({ ...p, excerpt: e.target.value }))} rows={2}
+                  <Textarea value={formData.excerpt} onChange={(e) => { excerptTouchedRef.current = true; setFormData(p => ({ ...p, excerpt: e.target.value })); }} rows={2}
                     placeholder="اضغط 'تقسيم تلقائي' لاستخراج الجملة الأولى كملخص، أو اكتب ملخصاً مخصصاً"
                     className="rounded-xl border-gray-200 resize-none text-sm" />
                 </div>
@@ -905,7 +960,7 @@ const PostEditor = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label>الصورة الرئيسية</Label>
-                  {formData.featured_image && <img src={formData.featured_image} alt="Featured" className="w-full h-48 object-cover rounded-lg" />}
+                  {formData.featured_image && <img src={formData.featured_image} alt="Featured" className="w-full h-auto max-h-72 object-contain rounded-lg bg-muted" />}
                   <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} />
                   {isUploadingImage && <p className="text-xs text-muted-foreground">جاري المعالجة والرفع...</p>}
                   {watermarkLogoUrl && (
@@ -950,7 +1005,7 @@ const PostEditor = () => {
                       </div>
                     </div>
                   )}
-                  <Input value={formData.featured_image} onChange={(e) => setFormData(p => ({ ...p, featured_image: e.target.value }))} placeholder="أو أدخل رابط الصورة" dir="ltr" />
+                  <Input value={formData.featured_image} onChange={(e) => setFormData(p => ({ ...p, featured_image: e.target.value, thumbnail_image: null }))} placeholder="أو أدخل رابط الصورة" dir="ltr" />
                 </div>
 
                 <div className="space-y-2 pt-2 border-t">
@@ -1029,7 +1084,7 @@ const PostEditor = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>الرابط الثابت (Slug)</Label>
-                  <Input value={formData.slug} onChange={(e) => setFormData(p => ({ ...p, slug: e.target.value }))}
+                  <Input value={formData.slug} onChange={(e) => { slugTouchedRef.current = true; setFormData(p => ({ ...p, slug: e.target.value })); }}
                     placeholder={generateSlug(formData.title) || "سيُولّد من العنوان"} dir="ltr" className="font-mono" />
                 </div>
                 <div className="space-y-2">
