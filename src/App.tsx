@@ -8,6 +8,7 @@ import Article from "./pages/Article";
 import ArticleLegacyRedirect from "./pages/ArticleLegacyRedirect";
 import Category from "./pages/Category";
 import MostReadPage from "./pages/MostReadPage";
+import About from "./pages/About";
 import RSSFeedsPage from "./pages/RSSFeedsPage";
 import PostRedirect from "./pages/PostRedirect";
 import NewsSlugRedirect from "./pages/NewsSlugRedirect";
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/:year/:month/:day/:slug" element={<Article />} />
           <Route path="/category/:slug" element={<Category />} />
           <Route path="/most-read" element={<MostReadPage />} />
+          <Route path="/about" element={<About />} />
           <Route path="/feed" element={<RSSFeedsPage />} />
           <Route path="/post/:id" element={<PostRedirect />} />
           <Route path="/news/:slug" element={<NewsSlugRedirect />} />
