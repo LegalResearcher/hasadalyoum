@@ -25,7 +25,7 @@ export default async function handler(req, res) {
         "alternateName": "Hasad Al-Youm",
         "url": `${SITE_URL}/`,
         "logo": `${SITE_URL}/logo.png`,
-        "foundingDate": "2024",
+        "foundingDate": "2011",
         "sameAs": [
           "https://www.facebook.com/hasadalyoum",
           "https://twitter.com/hasadalyoum"
