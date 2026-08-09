@@ -18,6 +18,30 @@ export default async function handler(req, res) {
     // --- 1. معاينة الصفحة الرئيسية ---
     if (type === "home") {
       const MAIN_IMAGE = `${SITE_URL}/og-image.png`;
+      const orgSchemaJson = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "NewsMediaOrganization",
+        "name": SITE_NAME,
+        "alternateName": "Hasad Al-Youm",
+        "url": `${SITE_URL}/`,
+        "logo": `${SITE_URL}/logo.png`,
+        "foundingDate": "2024",
+        "sameAs": [
+          "https://www.facebook.com/hasadalyoum",
+          "https://twitter.com/hasadalyoum"
+        ],
+        "founder": {
+          "@type": "Person",
+          "name": "معين الناصر",
+          "url": `${SITE_URL}/about`,
+          "jobTitle": "صاحب الامتياز ورئيس التحرير"
+        },
+        "editor": {
+          "@type": "Person",
+          "name": "معين الناصر",
+          "url": `${SITE_URL}/about`
+        }
+      });
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       return res.status(200).send(`<!DOCTYPE html>
@@ -42,6 +66,7 @@ export default async function handler(req, res) {
   <meta name="twitter:title" content="${SITE_NAME} | ينطلق من العاصمة صنعاء"/>
   <meta name="twitter:description" content="تغطية إخبارية شاملة ومستقلة لأحداث اليمن والمنطقة لحظة بلحظة."/>
   <meta name="twitter:image" content="${MAIN_IMAGE}"/>
+  <script type="application/ld+json">${orgSchemaJson}<\/script>
 </head>
 <body></body>
 </html>`);
