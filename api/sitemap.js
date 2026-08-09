@@ -66,6 +66,7 @@ export default async function handler(req, res) {
 
     const staticPages = [
       { loc: SITE_URL, priority: '1.0', changefreq: 'hourly' },
+      { loc: `${SITE_URL}/about`, priority: '0.6', changefreq: 'monthly' },
       ...(categories || []).map(c => ({
         loc: `${SITE_URL}/category/${c.slug}`,
         priority: '0.7',
