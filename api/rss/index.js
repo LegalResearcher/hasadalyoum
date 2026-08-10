@@ -43,6 +43,7 @@ export default async function handler(req, res) {
     const safePosts = posts || [];
 
     const xmlItems = safePosts.map((post) => {
+      const pubDate = new Date(post.published_at || post.created_at);
       const { year, month, day } = getYemenDateParts(post.published_at || post.created_at);
       const link = `${SITE_URL}/${year}/${month}/${day}/${post.slug || post.id}`;
       const description = post.excerpt || (post.content ? post.content.replace(/<[^>]*>/g, '').substring(0, 500) : post.title);
@@ -53,7 +54,7 @@ export default async function handler(req, res) {
         <link>${link}</link>
         <description><![CDATA[${description}]]></description>
         <category><![CDATA[${post.category?.name || 'أخبار'}]]></category>
-        <pubDate>${date.toUTCString()}</pubDate>
+        <pubDate>${pubDate.toUTCString()}</pubDate>
         <guid isPermaLink="true">${link}</guid>
         ${post.featured_image ? `<enclosure url="${post.featured_image}" length="0" type="image/jpeg" />` : ''}
       </item>`;
