@@ -28,6 +28,7 @@ const PostRedirect = () => {
           .from("posts")
           .select("id, slug, created_at, published_at")
           .eq("id", id)
+          .eq("status", "published")
           .maybeSingle();
 
         if (fetchError || !post) {

@@ -24,15 +24,17 @@ export default async function handler(req, res) {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // جلب مقالات آخر 48 ساعة فقط (متطلبات Google News)
+    // تضم خريطة أخبار Google المقالات المنشورة في آخر 48 ساعة. يجب أن يستند
+    // الاختيار إلى وقت النشر الفعلي لا وقت إنشاء المسودة، وإلا تغيب المقالات
+    // المُعدّة مسبقاً ثم المنشورة حديثاً.
     const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
     const { data: posts, error } = await supabase
       .from("posts")
       .select("id, slug, created_at, published_at, title")
       .eq("status", "published")
-      .gt("created_at", twoDaysAgo)
-      .order("created_at", { ascending: false });
+      .or(`published_at.gt.${twoDaysAgo},and(published_at.is.null,created_at.gt.${twoDaysAgo})`)
+      .order("published_at", { ascending: false });
 
     if (error) throw error;
 

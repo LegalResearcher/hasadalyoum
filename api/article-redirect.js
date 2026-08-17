@@ -18,11 +18,16 @@ import { getYemenDateParts } from './_lib/yemenDate.js';
  */
 const SITE_URL = "https://hasad-alyoum.com";
 
+function sendNotFound(res) {
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  return res.status(404).send('Not Found');
+}
+
 export default async function handler(req, res) {
   const { slug } = req.query;
 
   if (!slug) {
-    return res.redirect(302, SITE_URL);
+    return sendNotFound(res);
   }
 
   try {
@@ -30,7 +35,12 @@ export default async function handler(req, res) {
     const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const decodedSlug = decodeURIComponent(slug);
+    let decodedSlug;
+    try {
+      decodedSlug = decodeURIComponent(slug);
+    } catch {
+      return sendNotFound(res);
+    }
 
     const { data: post, error } = await supabase
       .from('posts')
@@ -40,7 +50,7 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     if (error || !post) {
-      return res.redirect(302, SITE_URL);
+      return sendNotFound(res);
     }
 
     const dateUsed = post.published_at || post.created_at;
@@ -48,10 +58,10 @@ export default async function handler(req, res) {
     const newUrl = `${SITE_URL}/${year}/${month}/${day}/${post.slug || post.id}`;
 
     // 301 دائم — جوجل يُحوّل كل قوة الـ SEO للرابط الجديد
-    return res.redirect(301, newUrl);
+    return res.redirect(301, encodeURI(newUrl));
 
   } catch (err) {
     console.error('article-redirect error:', err);
-    return res.redirect(302, SITE_URL);
+    return res.status(500).send('Internal Server Error');
   }
 }

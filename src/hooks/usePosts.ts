@@ -120,6 +120,7 @@ export const usePostBySlug = (slug: string) => {
           author:authors(id, name, avatar_url, bio)
         `)
         .eq("slug", slug)
+        .eq("status", "published")
         .maybeSingle();
 
       if (error) throw error;

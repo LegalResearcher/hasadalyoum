@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { yemenDayToUtcRange } from "./_lib/yemenDate.js";
+import { getYemenDateParts } from "./_lib/yemenDate.js";
 
 const escapeHtml = (str) =>
   (str || '')
@@ -81,22 +81,17 @@ export default async function handler(req, res) {
     const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // نحول تاريخ /YYYY/MM/DD المطلوب بالرابط (بتوقيت اليمن) لمدى UTC صحيح
-    // للاستعلام — قبل هذا الإصلاح كان الحساب يفترض توقيت السيرفر (UTC على
-    // Vercel) كأنه توقيت اليمن، فكانت أخبار منتصف الليل-٣ فجراً بتوقيت اليمن
-    // (٢١:٠٠-٢٣:٥٩ UTC) تفشل بالعثور عليها هنا رغم تطابق الـ slug تماماً،
-    // لأن نافذة البحث كانت تقع خارج التاريخ الفعلي المطلوب بالرابط.
-    const { startUtcIso: startDate, endUtcIso: endDate } = yemenDayToUtcRange(year, month, day);
-
     const decodedSlug = decodeURIComponent(slug);
 
+    // الـ slug هو المعرّف الفريد للمقال؛ لذلك لا نقيّد الاستعلام بتاريخ URL.
+    // قد يُنشأ الخبر كمسودة في يوم ثم يُنشر في يوم آخر، بينما الرابط الكنسي
+    // يعتمد published_at (أو created_at عند غيابها). التقييد بـ created_at كان
+    // يحوّل روابط Sitemap الصحيحة إلى 404 في هذه الحالة.
     const { data: post, error } = await supabase
       .from("posts")
       .select("id, title, excerpt, featured_image, slug, created_at, updated_at, published_at, content, category:categories(name), author:authors(id, name, avatar_url)")
       .eq("slug", decodedSlug)
       .eq("status", "published")
-      .gte("created_at", startDate)
-      .lte("created_at", endDate)
       .maybeSingle();
 
     if (error || !post) {
@@ -113,7 +108,13 @@ export default async function handler(req, res) {
     }
 
     const dateUsed = post.published_at || post.created_at;
-    const finalUrl = `${SITE_URL}/${year}/${month}/${day}/${post.slug || decodedSlug}`;
+    const { year: canonicalYear, month: canonicalMonth, day: canonicalDay } = getYemenDateParts(dateUsed);
+    const finalUrl = `${SITE_URL}/${canonicalYear}/${canonicalMonth}/${canonicalDay}/${post.slug || decodedSlug}`;
+
+    // نمنع تعدد نسخ المقال إذا وصل الزاحف أو المستخدم عبر تاريخ إنشاء قديم.
+    if (String(year) !== canonicalYear || String(month) !== canonicalMonth || String(day) !== canonicalDay) {
+      return res.redirect(301, encodeURI(finalUrl));
+    }
 
     // الصورة مع fallback
     const rawImage = post.featured_image;

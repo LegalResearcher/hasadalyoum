@@ -557,7 +557,7 @@ const Article = () => {
             {mostReadPosts.map((post, index) => (
               <Link
                 key={post.id}
-                to={getPostPath(post.slug, post.created_at)}
+                to={getPostPath(post.slug, post.published_at || post.created_at)}
                 className="group relative bg-card rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-border overflow-hidden"
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-muted">

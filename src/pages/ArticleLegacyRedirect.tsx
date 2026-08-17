@@ -17,14 +17,14 @@ const ArticleLegacyRedirect = () => {
       if (!slug) { setError(true); return; }
       const { data: post, error: fetchError } = await supabase
         .from("posts")
-        .select("slug, created_at")
+        .select("slug, created_at, published_at")
         .eq("slug", slug)
         .eq("status", "published")
         .maybeSingle();
 
       if (fetchError || !post) { setError(true); return; }
       // getPostUrl يُرجع رابط مطلق — نستخرج المسار فقط للتنقل الداخلي
-      const absolute = getPostUrl(post.slug, post.created_at);
+      const absolute = getPostUrl(post.slug, post.published_at || post.created_at);
       const path = absolute.replace(/^https?:\/\/[^/]+/, "");
       navigate(path, { replace: true });
     };

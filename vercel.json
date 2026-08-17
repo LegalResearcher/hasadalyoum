@@ -1,18 +1,17 @@
 {
-  "redirects": [
+  "rewrites": [
     {
       "source": "/post/:id",
-      "destination": "/api/post-redirect?id=:id",
-      "permanent": true
+      "destination": "/api/post-redirect?id=:id"
     },
     {
       "source": "/article/:slug",
-      "destination": "/api/article-redirect?slug=:slug",
-      "permanent": true
-    }
-  ],
-
-  "rewrites": [
+      "destination": "/api/article-redirect?slug=:slug"
+    },
+    {
+      "source": "/news/:slug",
+      "destination": "/api/news-redirect?slug=:slug"
+    },
     {
       "source": "/rss.xml",
       "destination": "/api/rss"
