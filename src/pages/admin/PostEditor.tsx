@@ -21,8 +21,7 @@ import { optimizeImage, isOptimizableImage, formatFileSize, generateThumbnail } 
 import { applyWatermark, generateWatermarkPreview } from "@/lib/imageWatermark";
 import { applyHeadlineDesign, generateHeadlineDesignPreview } from "@/lib/imageHeadlineDesign";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { generateMetaTitle, generateSEOSlug, extractSEOKeywords, pingSearchEngines } from "@/lib/seoHelpers";
-import { getPostUrl, SITE_URL } from "@/lib/postUrl";
+import { generateMetaTitle, generateSEOSlug, extractSEOKeywords } from "@/lib/seoHelpers";
 
 // ── InternalLinkingSuggestions (inline) ──────────────────────────────────────
 import { useQuery as useQueryIL } from "@tanstack/react-query";
@@ -604,7 +603,8 @@ const PostEditor = () => {
         meta_keywords: rest.meta_keywords || generateKeywords(rest.title, rest.content),
         word_count: wordCount,
         reading_time: readingTime,
-        published_at: formData.status === "published" ? new Date().toISOString() : null,
+        // نثبت وقت النشر الأصلي؛ لا يجوز تغييره عند تعديل خبر منشور لاحقاً.
+        published_at: formData.status === "published" ? (post?.published_at || new Date().toISOString()) : null,
         scheduled_at: formData.scheduled_at || null,
         hide_after: formData.hide_after || null,
         category_id: isValidUUID(formData.category_id) ? formData.category_id : null,
@@ -632,9 +632,14 @@ const PostEditor = () => {
         if (error) throw error;
         postId = newPost.id;
       } else {
-        const { error } = await supabase.from("posts").update(postData).eq("id", id);
+        const { data: updatedPost, error } = await supabase
+          .from("posts")
+          .update(postData)
+          .eq("id", id)
+          .select("id, slug, published_at")
+          .single();
         if (error) throw error;
-        postId = id;
+        postId = updatedPost.id;
       }
 
       return { postId, isNewPublish, slug: postData.slug || formData.slug };
@@ -660,58 +665,22 @@ const PostEditor = () => {
         await seedViewsForPost(postId);
       }
 
-      // فهرسة Google عند أي نشر جديد (من draft/scheduled → published) — نفس منطق الجنوب فويس حرفياً
-      if (isNewPublish && slug) {
-        const postUrl = getPostUrl(slug, new Date().toISOString());
-
-        // Ping sitemap لـ Google و Bing في الخلفية
-        pingSearchEngines(`${SITE_URL}/sitemap.xml`)
-          .then((res) => console.log("Ping results:", res))
-          .catch((err) => console.error("Ping failed:", err));
-
-        // Log the final URL being sent to Google for verification
-        console.log('🔗 URL being sent to Google Indexing API:', postUrl);
-        toast.info(`جاري إرسال الرابط: ${postUrl}`);
-
+      // لا توجد قناة Google مدعومة تضمن فهرسة الأخبار فوراً. نتحقق بدلاً من ذلك
+      // من عوامل الاكتشاف التي نتحكم بها: الرابط الكنسي وSitemap وNews Sitemap وRSS.
+      if (isNewPublish && postId) {
         try {
-          // Call Google Indexing API via edge function
-          const { data, error } = await supabase.functions.invoke('google-indexing', {
-            body: { urls: [postUrl], type: 'URL_UPDATED' }
-          });
+          const readinessResponse = await fetch(`/api/publish-readiness?id=${encodeURIComponent(postId)}`);
+          const readiness = await readinessResponse.json();
 
-          // Check for edge function invocation error
-          if (error) {
-            console.error('Google Indexing API invocation error:', error);
-            console.error('Failed URL:', postUrl);
-            toast.error('تم نشر الخبر، لكن فشل الاتصال بـ Google Indexing API. تحقق من إعداد مفتاح الخدمة.');
-          } else if (data?.error) {
-            // Check for API-level error in response
-            console.error('Google Indexing API returned error:', data.error);
-            console.error('Failed URL:', postUrl);
-            toast.error(`تم نشر الخبر، لكن فشلت الفهرسة: ${data.error}`);
+          if (readinessResponse.ok && readiness.ready) {
+            toast.success('تم نشر الخبر وهو جاهز لاكتشاف Google عبر الرابط الكنسي وSitemap وRSS.');
           } else {
-            // Check if indexing was actually successful
-            const indexingResult = data?.results?.[0];
-            if (indexingResult?.success === true) {
-              toast.success('تم نشر الخبر وإرسال طلب الفهرسة إلى Google بنجاح!');
-              console.log('✅ Indexing successful for URL:', postUrl);
-              console.log('Indexing response:', indexingResult);
-            } else if (indexingResult?.success === false) {
-              // API returned but indexing failed
-              const errorDetails = indexingResult?.data?.error?.message || indexingResult?.error || 'خطأ غير معروف';
-              console.error('❌ Indexing failed for URL:', postUrl);
-              console.error('Error details:', indexingResult);
-              toast.error(`تم نشر الخبر، لكن فشلت الفهرسة: ${errorDetails}`);
-            } else {
-              // Unexpected response structure
-              console.warn('⚠️ Unexpected indexing response for URL:', postUrl);
-              console.warn('Response:', data);
-              toast.warning('تم نشر الخبر. حالة الفهرسة غير مؤكدة.');
-            }
+            console.warn('Publish readiness check failed:', readiness);
+            toast.warning('تم نشر الخبر، لكن تحقق من جاهزية الرابط وSitemap قبل طلب الفهرسة يدوياً.');
           }
         } catch (error) {
-          // Network/other error
-          console.error('Publish with indexing error:', error);
+          console.error('Publish readiness check error:', error);
+          toast.warning('تم نشر الخبر، وتعذر التحقق الآلي من جاهزية الاكتشاف.');
         }
       }
 

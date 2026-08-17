@@ -14,8 +14,8 @@ const corsHeaders = {
 const YEMEN_OFFSET_MS = 3 * 60 * 60 * 1000;
 
 // Helper to generate post URL
-function getPostUrl(post: { id: string; created_at: string; slug?: string | null; title?: string }): string {
-  const utcMs = new Date(post.created_at).getTime();
+function getPostUrl(post: { id: string; created_at: string; published_at?: string | null; slug?: string | null; title?: string }): string {
+  const utcMs = new Date(post.published_at || post.created_at).getTime();
   const yemenDate = new Date(utcMs + YEMEN_OFFSET_MS);
   const year = yemenDate.getUTCFullYear();
   const month = String(yemenDate.getUTCMonth() + 1).padStart(2, '0');
@@ -41,7 +41,7 @@ serve(async (req) => {
     const now = new Date().toISOString();
     const { data: scheduledPosts, error: fetchError } = await supabase
       .from('posts')
-      .select('id, title, slug, created_at, scheduled_at')
+      .select('id, title, slug, created_at, published_at, scheduled_at')
       .eq('status', 'scheduled')
       .not('scheduled_at', 'is', null)
       .lte('scheduled_at', now);
@@ -62,27 +62,29 @@ serve(async (req) => {
     console.log(`Found ${scheduledPosts.length} posts to publish`);
 
     const results = [];
-    const urlsToIndex = [];
 
     for (const post of scheduledPosts) {
       try {
-        // Update post status to published
-        const { error: updateError } = await supabase
+        // نثبت وقت النشر الأصلي عند تحقق الجدولة، ثم نبني كل الإشارات منه.
+        const publishedAt = post.published_at || post.scheduled_at || new Date().toISOString();
+        const { data: publishedPost, error: updateError } = await supabase
           .from('posts')
-          .update({ 
+          .update({
             status: 'published',
+            published_at: publishedAt,
             scheduled_at: null,
             updated_at: new Date().toISOString()
           })
-          .eq('id', post.id);
+          .eq('id', post.id)
+          .select('id, slug, created_at, published_at')
+          .single();
 
-        if (updateError) {
+        if (updateError || !publishedPost) {
           console.error(`Failed to publish post ${post.id}:`, updateError);
-          results.push({ id: post.id, title: post.title, success: false, error: updateError.message });
+          results.push({ id: post.id, title: post.title, success: false, error: updateError?.message || 'لم يُعثر على الخبر بعد التحديث' });
         } else {
           console.log(`Published post: ${post.title}`);
-          const postUrl = `https://hasad-alyoum.com${getPostUrl(post)}`;
-          urlsToIndex.push(postUrl);
+          const postUrl = `https://hasad-alyoum.com${getPostUrl(publishedPost)}`;
           results.push({ id: post.id, title: post.title, success: true, url: postUrl });
         }
       } catch (error: any) {
@@ -91,38 +93,26 @@ serve(async (req) => {
       }
     }
 
-    // Request Google indexing for all published posts
-    if (urlsToIndex.length > 0) {
-      console.log(`Requesting indexing for ${urlsToIndex.length} URLs`);
-      
-      try {
-        const serviceAccountKeyStr = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_KEY");
-        if (serviceAccountKeyStr) {
-          // Call the google-indexing function internally
-          const { data: indexingResult, error: indexingError } = await supabase.functions.invoke('google-indexing', {
-            body: { urls: urlsToIndex, type: 'URL_UPDATED' }
-          });
+    const successCount = results.filter(r => r.success).length;
+    let discoverySignalsUpdated = false;
 
-          if (indexingError) {
-            console.error("Indexing request failed:", indexingError);
-          } else {
-            console.log("Indexing request sent successfully:", indexingResult);
-          }
-        } else {
-          console.log("Google Service Account key not configured, skipping indexing");
-        }
-      } catch (indexError) {
-        console.error("Error during indexing request:", indexError);
+    // لا نستخدم Google Indexing API للأخبار العادية. نحدّث IndexNow مرة واحدة
+    // بعد الدفعة، بينما تلتقط Google المقالات من Sitemap وNews Sitemap وRSS.
+    if (successCount > 0) {
+      try {
+        const signalResponse = await fetch('https://hasad-alyoum.com/api/ping-sitemap');
+        discoverySignalsUpdated = signalResponse.ok;
+      } catch (signalError) {
+        console.error('Discovery signal refresh failed:', signalError);
       }
     }
-
-    const successCount = results.filter(r => r.success).length;
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Published ${successCount} of ${scheduledPosts.length} posts`,
         published: successCount,
+        discoverySignalsUpdated,
         results
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

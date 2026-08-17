@@ -302,7 +302,6 @@ def send_admin_alert(text: str) -> bool:
 
 
 AUTO_SEED_VIEWS = True
-GOOGLE_INDEXING_ENABLED = True
 NEWS_REPORTS_CATEGORY_NAME = "أخبار وتقارير"
 
 
@@ -376,19 +375,14 @@ def build_canonical_url(slug: str, created_at_iso: str) -> str:
     return f"{SITE_BASE_URL}/{dt.year:04d}/{dt.month:02d}/{dt.day:02d}/{slug}"
 
 
-def request_google_indexing(urls: list) -> None:
-    if not GOOGLE_INDEXING_ENABLED or not urls:
-        return
-    try:
-        url = f"{SUPABASE_URL}/functions/v1/google-indexing"
-        r = requests.post(url, headers=sb_headers(),
-                           json={"urls": urls, "type": "URL_UPDATED"}, timeout=REQUEST_TIMEOUT)
-        if r.status_code == 200:
-            log.info(f"  📡 أُرسل للأرشفة (Google Indexing)")
-        else:
-            log.warning(f"  ⚠️  فشل إرسال الأرشفة [{r.status_code}]: {r.text[:200]}")
-    except requests.RequestException as e:
-        log.warning(f"  ⚠️  خطأ إرسال الأرشفة: {e}")
+def log_discovery_ready(urls: list) -> None:
+    """يسجل جاهزية الخبر للاكتشاف دون ادعاء فهرسة فورية من Google.
+
+    المقالات المنشورة تظهر في Sitemap وNews Sitemap وRSS الديناميكية. لا نستخدم
+    Google Indexing API للأخبار العادية لأنها ليست ضمن نطاقها المدعوم.
+    """
+    if urls:
+        log.info(f"  🔎 جاهز للاكتشاف عبر الرابط الكنسي وSitemap وRSS ({len(urls)} رابط)")
 
 # ══════════════════════════════════════════════════════════════════════
 #  🔑 المفاتيح ذات الأولوية — تُجرَّب أولاً وبنفس هذا الترتيب تماماً:
@@ -3293,7 +3287,7 @@ def main():
                 save_pending_scheduled(pending)
             else:
                 send_to_telegram(record["title"], canonical_url)
-                request_google_indexing([canonical_url])
+                log_discovery_ready([canonical_url])
         else:
             fail += 1
 

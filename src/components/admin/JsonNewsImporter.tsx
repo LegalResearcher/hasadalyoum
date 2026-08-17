@@ -23,7 +23,6 @@ import {
   Image as ImageIcon,
   Loader2,
   Send,
-  Radio,
   Wand2,
 } from "lucide-react";
 import { generateMetaTitle, generateSEOSlug, extractSEOKeywords } from "@/lib/seoHelpers";
@@ -115,23 +114,15 @@ const JsonNewsImporter = () => {
   const { data: authors = [] } = useAuthors();
   const queryClient = useQueryClient();
 
-  // ─── إرسال الروابط لـ Google Indexing API ────────────────────────────────
-  const sendUrlsToGoogleIndexing = async (
-    urls: string[]
-  ): Promise<{ sent: number; failed: number }> => {
-    let sent = 0;
-    let failed = 0;
-    for (let i = 0; i < urls.length; i += 10) {
-      const batch = urls.slice(i, i + 10);
-      try {
-        const { error } = await supabase.functions.invoke("google-indexing", {
-          body: { urls: batch, type: "URL_UPDATED" },
-        });
-        if (error) { failed += batch.length; }
-        else { sent += batch.length; }
-      } catch { failed += batch.length; }
+  // Google Indexing API لا تدعم المقالات الإخبارية العادية. نحدّث بدلاً من ذلك
+  // إشارة IndexNow لمحركاتها المشاركة، بينما تعتمد Google على Sitemap وRSS.
+  const refreshDiscoverySignals = async (): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/ping-sitemap", { method: "GET", cache: "no-store" });
+      return response.ok;
+    } catch {
+      return false;
     }
-    return { sent, failed };
   };
 
   // الفئة الافتراضية: أول فئة متاحة أو ""
@@ -382,14 +373,14 @@ const JsonNewsImporter = () => {
         views_count: 0,
         is_featured: post.is_featured || false,
         is_pinned: post.is_pinned || false,
-      }).select("id, slug, status, created_at").single();
+      }).select("id, slug, status, created_at, published_at").single();
 
       if (error) throw error;
 
       // إرجاع URL فقط إذا كان الخبر منشوراً فعلاً
       if (inserted?.status === "published") {
         const { getPostUrl } = await import("@/lib/postUrl");
-        return { id: inserted.id, publishedUrl: getPostUrl(inserted.slug, inserted.created_at) };
+        return { id: inserted.id, publishedUrl: getPostUrl(inserted.slug, inserted.published_at || inserted.created_at) };
       }
       return { id: inserted?.id, publishedUrl: null };
     } catch (err: any) {
@@ -442,7 +433,7 @@ const JsonNewsImporter = () => {
   };
 
   // ─── نشر الكل ──────────────────────────────────────────────────────────────
-  const publishAll = async (withIndexing: boolean = false) => {
+  const publishAll = async () => {
     if (!posts.length) return;
     if (scheduleMode === "interval" && !intervalStart) {
       toast.error("حدد وقت بداية الفارق الزمني");
@@ -493,25 +484,14 @@ const JsonNewsImporter = () => {
       await seedViewsForPosts(publishedIds);
     }
 
-    // فهرسة Google عبر Indexing API
+    // نحدّث إشارات الاكتشاف المدعومة. لا ندّعي فهرسة Google الفورية؛ تظهر
+    // المقالات المنشورة تلقائياً في Sitemap وNews Sitemap وRSS الديناميكية.
     if (publishedUrls.length > 0) {
-      if (withIndexing) {
-        // "نشر + فهرسة فورية" — /api/ping-sitemap يرسل الآن روابط الـ sitemap لـ IndexNow فعلياً
-        // (استُبدل استدعاء google.com/ping القديم لأنه ألغي رسمياً منذ 2023 ويرجع 404)
-        try {
-          await fetch("/api/ping-sitemap", { method: "GET" }).catch(() => {});
-        } catch { /* silent */ }
-        const { sent, failed } = await sendUrlsToGoogleIndexing(publishedUrls);
-        if (sent > 0) {
-          toast.success(`تم إرسال ${sent} رابط لـ Google Indexing API${failed ? ` (فشل ${failed})` : ""}`);
-        } else {
-          toast.error("فشل إرسال الروابط لـ Google Indexing API");
-        }
+      const signalsUpdated = await refreshDiscoverySignals();
+      if (signalsUpdated) {
+        toast.success(`تم نشر ${publishedUrls.length} خبر وتحديث إشارات الاكتشاف.`);
       } else {
-        // "نشر الكل" — فهرسة صامتة في الخلفية
-        sendUrlsToGoogleIndexing(publishedUrls).catch((err) =>
-          console.error("[Auto-Index] Silent indexing failed:", err)
-        );
+        toast.warning('تم النشر، لكن تعذر تحديث إشارة IndexNow. تبقى Sitemap وRSS متاحتين لـGoogle.');
       }
     }
 
@@ -916,27 +896,16 @@ const JsonNewsImporter = () => {
           </div>
 
           {/* أزرار النشر */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
+          <div className="grid grid-cols-1 gap-2 pt-2">
             <Button
-              onClick={() => publishAll(false)}
+              onClick={() => publishAll()}
               disabled={isPublishing || posts.length === 0}
               className="bg-emerald-600 hover:bg-emerald-700 text-white h-10 font-bold"
             >
               {isPublishing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <><Send className="h-4 w-4 ml-2" /> نشر الكل ({posts.length})</>
-              )}
-            </Button>
-            <Button
-              onClick={() => publishAll(true)}
-              disabled={isPublishing || posts.length === 0}
-              className="bg-orange-600 hover:bg-orange-700 text-white h-10 font-bold"
-            >
-              {isPublishing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <><Radio className="h-4 w-4 ml-2" /> نشر + فهرسة فورية</>
+                <><Send className="h-4 w-4 ml-2" /> نشر الكل وتحديث إشارات الاكتشاف ({posts.length})</>
               )}
             </Button>
           </div>

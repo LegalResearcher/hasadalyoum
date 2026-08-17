@@ -16,13 +16,34 @@ assert.deepEqual(newsRedirect, {
 });
 assert.equal('redirects' in vercel, false);
 
-const [newsApi, newsRedirectApi, sitemapNewsApi, postRedirectApi, articleRedirectApi, postsHook] = await Promise.all([
+const [
+  newsApi,
+  newsRedirectApi,
+  sitemapNewsApi,
+  postRedirectApi,
+  articleRedirectApi,
+  postsHook,
+  readinessApi,
+  postEditor,
+  jsonImporter,
+  scheduledPublisher,
+  indexingSignal,
+  siteIndex,
+  newsBot,
+] = await Promise.all([
   read('api/news.js'),
   read('api/news-redirect.js'),
   read('api/sitemap-news.js'),
   read('api/post-redirect.js'),
   read('api/article-redirect.js'),
   read('src/hooks/usePosts.ts'),
+  read('api/publish-readiness.js'),
+  read('src/pages/admin/PostEditor.tsx'),
+  read('src/components/admin/JsonNewsImporter.tsx'),
+  read('supabase/functions/publish-scheduled/index.ts'),
+  read('supabase/functions/google-indexing/index.ts'),
+  read('index.html'),
+  read('hasad_news_bot_fixed.py'),
 ]);
 
 assert.match(newsApi, /\.eq\("slug", decodedSlug\)[\s\S]*?\.eq\("status", "published"\)[\s\S]*?\.maybeSingle\(\)/);
@@ -34,5 +55,23 @@ assert.match(newsRedirectApi, /return res\.redirect\(301, encodeURI\(canonicalUr
 assert.match(articleRedirectApi, /X-Robots-Tag', 'noindex, nofollow'/);
 assert.match(postRedirectApi, /\.eq\('status', 'published'\)/);
 assert.match(postsHook, /\.eq\("slug", slug\)[\s\S]*?\.eq\("status", "published"\)/);
+
+assert.match(readinessApi, /canonicalPage:[\s\S]*?sitemap:[\s\S]*?newsSitemap:[\s\S]*?rss:/);
+assert.match(readinessApi, /Googlebot\/2\.1/);
+assert.match(readinessApi, /ready = Object\.values\(checks\)\.every\(Boolean\)/);
+assert.match(postEditor, /published_at: formData\.status === "published" \? \(post\?\.published_at \|\| new Date\(\)\.toISOString\(\)\) : null/);
+assert.match(postEditor, /\/api\/publish-readiness\?id=/);
+assert.doesNotMatch(postEditor, /functions\.invoke\('google-indexing'/);
+assert.match(jsonImporter, /refreshDiscoverySignals/);
+assert.doesNotMatch(jsonImporter, /functions\.invoke\("google-indexing"/);
+assert.doesNotMatch(jsonImporter, /فهرسة فورية/);
+assert.match(scheduledPublisher, /published_at: publishedAt/);
+assert.match(scheduledPublisher, /api\/ping-sitemap/);
+assert.doesNotMatch(scheduledPublisher, /functions\.invoke\('google-indexing'/);
+assert.match(indexingSignal, /IndexNow فقط/);
+assert.doesNotMatch(indexingSignal, /indexing\.googleapis\.com/);
+assert.match(siteIndex, /rel="alternate" type="application\/rss\+xml"/);
+assert.match(newsBot, /log_discovery_ready/);
+assert.doesNotMatch(newsBot, /request_google_indexing/);
 
 console.log('SEO verification checks passed.');
