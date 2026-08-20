@@ -6,6 +6,7 @@ type TelegramMiniApp = {
   initData?: string;
   ready: () => void;
   expand?: () => void;
+  close?: () => void;
 };
 
 type TelegramWindow = Window & { Telegram?: { WebApp?: TelegramMiniApp } };
@@ -14,6 +15,7 @@ type VisitStatus = "checking" | "verified" | "failed" | "browser";
 
 export default function TelegramBotVisit() {
   const [status, setStatus] = useState<VisitStatus>("checking");
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const webApp = (window as TelegramWindow).Telegram?.WebApp;
@@ -35,6 +37,11 @@ export default function TelegramBotVisit() {
       .then((response) => {
         if (!response.ok) throw new Error("verification-failed");
         setStatus("verified");
+        setRedirecting(true);
+        window.setTimeout(() => {
+          webApp.close?.();
+          window.location.assign("https://t.me/Moieen2025Bot");
+        }, 1800);
       })
       .catch(() => setStatus("failed"));
   }, []);
@@ -47,7 +54,7 @@ export default function TelegramBotVisit() {
     },
     verified: {
       title: "تم توثيق الزيارة بنجاح",
-      description: "يمكنك الآن العودة إلى بوت الناصر القانوني وفتح قسم الصيغ والعقود القانونية.",
+      description: "شكرًا لزيارتك. فُتح لك الوصول المجاني إلى القواعد القضائية والصيغ والعقود القانونية.",
       accent: "bg-emerald-500",
     },
     failed: {
@@ -74,7 +81,7 @@ export default function TelegramBotVisit() {
             <p className="text-sm font-bold tracking-wide text-amber-300">حصاد اليوم الإخباري</p>
             <h1 className="mt-3 text-2xl font-black sm:text-3xl">{content.title}</h1>
             <p className="mt-4 leading-8 text-slate-300">{content.description}</p>
-            {status === "verified" && <p className="mt-6 text-sm font-bold text-emerald-300">يمكنك إغلاق هذه الصفحة والعودة إلى المحادثة.</p>}
+            {status === "verified" && <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-bold text-emerald-200"><div className="flex items-center justify-center gap-2"><span className={`inline-block h-4 w-4 rounded-full border-2 border-emerald-100/30 border-t-emerald-100 ${redirecting ? "animate-spin" : ""}`} /><span>جارٍ إعادتك تلقائيًا إلى بوت الناصر القانوني…</span></div><a href="https://t.me/Moieen2025Bot" className="mt-3 inline-block border-b border-emerald-200/50 pb-0.5 text-xs text-emerald-100">العودة إلى البوت الآن</a></div>}
           </div>
         </section>
       </div>
