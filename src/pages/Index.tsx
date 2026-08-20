@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import HeroSlider from "@/components/news/HeroSlider";
 import NewsSection from "@/components/news/NewsSection";
@@ -9,6 +10,10 @@ import { SITE_NAME, SITE_URL, SITE_LOGO } from "@/lib/seoHelpers";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
+const TELEGRAM_HASAD_VISIT_ENDPOINT = "https://moilegbot-cd9jlnvj.manus.space/api/telegram/hasad-visit";
+type TelegramMiniApp = { initData?: string; ready: () => void };
+type TelegramWindow = Window & { Telegram?: { WebApp?: TelegramMiniApp } };
 
 // slug خاص للأكثر قراءة — يُعالج كمكوّن منفصل وليس قسماً عادياً
 const MOST_READ_SLUG = "most-read";
@@ -53,6 +58,27 @@ const useHomeCategories = () => {
 const Index = () => {
   const { data: settings } = useSiteSettings();
   const { data: homeCategories = [] } = useHomeCategories();
+  const [telegramVisitStatus, setTelegramVisitStatus] = useState<"idle" | "checking" | "verified" | "failed">("idle");
+
+  useEffect(() => {
+    const webApp = (window as TelegramWindow).Telegram?.WebApp;
+    if (!webApp?.initData) return;
+    webApp.ready();
+    setTelegramVisitStatus("checking");
+    fetch(TELEGRAM_HASAD_VISIT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        initData: webApp.initData,
+        region: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }),
+    })
+      .then(response => {
+        if (!response.ok) throw new Error("verification-failed");
+        setTelegramVisitStatus("verified");
+      })
+      .catch(() => setTelegramVisitStatus("failed"));
+  }, []);
 
   const siteDescription =
     settings?.site_description ||
@@ -80,6 +106,13 @@ const Index = () => {
 
   return (
     <Layout>
+      {telegramVisitStatus !== "idle" && (
+        <div className="fixed left-4 right-4 top-4 z-50 mx-auto max-w-md rounded-2xl border border-amber-400/30 bg-white/95 px-4 py-3 text-center text-sm font-bold text-slate-800 shadow-xl backdrop-blur" role="status">
+          {telegramVisitStatus === "checking" && "جارٍ توثيق زيارتك لحصاد اليوم…"}
+          {telegramVisitStatus === "verified" && "تم توثيق زيارتك لحصاد اليوم بنجاح. يمكنك العودة إلى البوت."}
+          {telegramVisitStatus === "failed" && "تعذر توثيق الزيارة حاليًا. افتح حصاد اليوم من زر التحقق داخل البوت وحاول مرة أخرى."}
+        </div>
+      )}
       <Helmet>
         <title>{`${SITE_NAME} | منبرك الأول لأخبار اليمن والحدث لحظة بلحظة`}</title>
         <meta name="description" content={siteDescription} />

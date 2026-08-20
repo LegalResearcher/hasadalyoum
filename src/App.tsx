@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Article from "./pages/Article";
 import ArticleLegacyRedirect from "./pages/ArticleLegacyRedirect";
@@ -26,7 +26,6 @@ import Profile from "./pages/admin/Profile";
 import Editors from "./pages/admin/Editors";
 import Ads from "./pages/admin/Ads";
 import Maintenance from "./pages/admin/Maintenance";
-import TelegramBotVisit from "./pages/TelegramBotVisit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,7 +47,7 @@ const App = () => (
           <Route path="/feed" element={<RSSFeedsPage />} />
           <Route path="/post/:id" element={<PostRedirect />} />
           <Route path="/news/:slug" element={<NewsSlugRedirect />} />
-          <Route path="/bot-visit" element={<TelegramBotVisit />} />
+          <Route path="/bot-visit" element={<Navigate to="/" replace />} />
           
           {/* Auth */}
           <Route path="/auth" element={<Auth />} />
