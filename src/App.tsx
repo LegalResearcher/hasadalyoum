@@ -26,6 +26,7 @@ import Profile from "./pages/admin/Profile";
 import Editors from "./pages/admin/Editors";
 import Ads from "./pages/admin/Ads";
 import Maintenance from "./pages/admin/Maintenance";
+import TelegramBotVisit from "./pages/TelegramBotVisit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/feed" element={<RSSFeedsPage />} />
           <Route path="/post/:id" element={<PostRedirect />} />
           <Route path="/news/:slug" element={<NewsSlugRedirect />} />
+          <Route path="/bot-visit" element={<TelegramBotVisit />} />
           
           {/* Auth */}
           <Route path="/auth" element={<Auth />} />
